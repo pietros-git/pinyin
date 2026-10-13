@@ -1,0 +1,907 @@
+<!DOCTYPE html>
+<html lang="it" data-app="pinyin-reader-studio" data-version="2.0">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="dark">
+<meta name="application-name" content="Pinyin & English Reader Studio v2.0">
+<title>Pinyin &amp; English Reader Studio v2.0</title>
+<!--
+==========================================================================================
+  PINYIN & ENGLISH READER STUDIO — TEMPLATE VUOTO
+  Versione interna: 2.0  ·  data: 2026-10-13  ·  file singolo, autonomo, offline-first
+------------------------------------------------------------------------------------------
+  NOTA SULLE MODIFICHE RISPETTO ALLA v1.0 (file pubblicato "Pinyin_studio_pro.html")
+  [1] Il file è un TEMPLATE VUOTO: nessun testo pre-tradotto, nessun contenuto di esempio.
+      Al momento della pubblicazione su GitHub non contiene né testi né chiavi API.
+  [2] Titolo con numero di versione interno (title, <html data-version>, badge in intestazione
+      e nel footer) per riconoscere subito la build pubblicata.
+  [3] Pulsante "⚙︎ Imposta" potenziato: chiave API, endpoint (globale / EU / US), modello
+      preimpostato, catalogo OpenRouter opzionale, ID modello personalizzato, verifica chiave.
+  [4] Pulsante "⟲ Reset" (sostituisce "✓ Esci"): svuota memoria, area di testo, documento,
+      telemetria e — su conferma — anche chiave, modello ed endpoint salvati sul dispositivo.
+  [5] Modelli preimpostati aggiornati: gli ID della v1.0 (gemini-2.5-flash, claude-3.5-haiku,
+      gpt-4o-mini, deepseek-chat) sono obsoleti o deprecati; ora si usano gli alias
+      "always-latest" e le build correnti.
+  [6] Correzione zoom automatico di iOS: campi e textarea a 16px (sotto i 16px WebKit
+      ingrandisce la pagina al focus e non la ripristina).
+  [7] Sintesi vocale: scelta esplicita della voce cinese, lettura a blocchi brevi
+      (iOS tronca le utterance lunghe) e gestione sicurezza/stato con generazione.
+  [8] Contratto JSON col modello più stretto: punteggiatura come token con pinyin vuoto,
+      una sillaba per ogni carattere Han, concatenazione dei token = frase originale.
+  [9] Errori mostrati in pagina (riquadro + stato) invece di alert().
+  [10] Rendering costruito con nodi DOM e textContent (nessun innerHTML con dati del modello).
+==========================================================================================
+-->
+<style>
+  :root{
+    --bg:#0f172a; --card-bg:#1e293b; --text-main:#f8fafc; --text-dim:#94a3b8;
+    --border:#334155; --accent:#38bdf8; --accent-dim:rgba(56,189,248,.15);
+    --success:#22c55e; --danger:#f43f5e; --warn:#fbbf24;
+    --tone-1:#f87171; --tone-2:#4ade80; --tone-3:#60a5fa; --tone-4:#c084fc; --tone-5:#94a3b8;
+  }
+  *{box-sizing:border-box}
+  body{
+    margin:0;
+    padding:calc(env(safe-area-inset-top,0px) + 14px) 14px calc(env(safe-area-inset-bottom,0px) + 24px);
+    background:var(--bg); color:var(--text-main);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",sans-serif;
+    -webkit-tap-highlight-color:transparent; -webkit-text-size-adjust:100%;
+  }
+  header{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;margin-bottom:12px;padding-bottom:10px;border-bottom:1px solid var(--border)}
+  .brand h1{font-size:1.05rem;margin:0;font-weight:600;line-height:1.3}
+  .ver{display:inline-block;font-size:.68rem;font-weight:700;letter-spacing:.04em;color:var(--accent);
+       background:var(--accent-dim);border-radius:5px;padding:2px 6px;margin-left:6px;vertical-align:2px}
+  .brand p{margin:4px 0 0;font-size:.74rem;color:var(--text-dim);line-height:1.4}
+  .header-actions{display:flex;gap:6px;flex-shrink:0}
+
+  .btn{background:var(--bg);color:var(--text-dim);border:1px solid var(--border);padding:7px 11px;
+       border-radius:8px;font-size:.82rem;font-weight:600;cursor:pointer;white-space:nowrap}
+  .btn:active{transform:scale(.97)}
+  .btn.active{background:var(--accent);color:#0f172a;border-color:var(--accent)}
+  .btn-done{background:var(--success);color:#052e16;border:none;font-weight:700}
+  .btn-danger{color:var(--danger);border-color:var(--danger);background:transparent}
+  .btn-main{background:var(--accent);color:#0f172a;border:none;padding:9px 14px;border-radius:8px;
+            font-weight:700;font-size:.88rem;cursor:pointer;white-space:nowrap}
+  .btn-main:disabled{opacity:.5}
+  .btn-mini{padding:5px 9px;font-size:.76rem}
+
+  textarea,input,select{font-size:16px} /* iOS: sotto 16px WebKit ingrandisce al focus */
+  textarea#raw-text{width:100%;height:96px;background:var(--card-bg);border:1px solid var(--border);
+    color:var(--text-main);border-radius:10px;padding:12px;resize:vertical;margin-bottom:10px;line-height:1.5}
+  textarea#raw-text::placeholder{color:#64748b}
+
+  .controls-row{display:flex;justify-content:space-between;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:12px}
+  .toolbar-group{display:flex;gap:5px;align-items:center;flex-wrap:wrap}
+
+  .telemetry-bar{display:none;background:var(--card-bg);border:1px solid var(--border);border-radius:8px;
+    padding:6px 12px;margin-bottom:12px;font-size:.78rem;color:var(--text-dim);
+    justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap}
+  .telemetry-bar.active{display:flex}
+  .badge{background:var(--accent-dim);color:var(--accent);padding:2px 6px;border-radius:4px;font-weight:600}
+
+  .alert{display:none;border:1px solid var(--danger);border-left-width:4px;background:rgba(244,63,94,.08);
+    color:#fecdd3;border-radius:8px;padding:10px 12px;font-size:.82rem;line-height:1.5;margin-bottom:12px;word-break:break-word}
+  .alert.active{display:block}
+  .alert b{color:#fff}
+
+  .empty{background:var(--card-bg);border:1px dashed var(--border);border-radius:12px;padding:16px;
+    text-align:left;color:var(--text-dim);font-size:.84rem;line-height:1.6}
+  .empty h2{margin:0 0 10px;font-size:.92rem;color:var(--text-main)}
+  .empty ol{margin:0;padding-left:20px}
+  .empty li{margin-bottom:6px}
+  .empty code{background:#0f172a;border:1px solid var(--border);border-radius:4px;padding:1px 5px;font-size:.78rem}
+
+  .cards{display:flex;flex-direction:column;gap:14px}
+  .card{background:var(--card-bg);border-radius:12px;padding:14px;display:flex;flex-direction:column;gap:12px;border:1px solid var(--border)}
+  .card.speaking-card{border-color:var(--accent);box-shadow:0 0 10px var(--accent-dim)}
+  .sentence-container{display:flex;flex-wrap:wrap;gap:4px 10px;align-items:flex-end;line-height:2.3}
+  .word-token{display:inline-flex;cursor:pointer;border-radius:6px;padding:0 3px;background:rgba(255,255,255,.02);
+    border-bottom:2px solid transparent;user-select:none;-webkit-user-select:none}
+  .word-token:active{background:var(--accent-dim);border-bottom-color:var(--accent)}
+  ruby{font-size:1.6rem;color:var(--text-main);ruby-position:over;padding:0 1px}
+  rt{font-size:.85rem;font-weight:600;text-align:center;font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text",sans-serif}
+  body.hide-pinyin rt{visibility:hidden}
+  .punctuation{font-size:1.6rem;color:var(--text-dim);align-self:flex-end;line-height:1.8}
+  .english-word{font-size:1.15rem;color:var(--accent);font-weight:500;padding:2px 4px;cursor:pointer}
+  .t1{color:var(--tone-1)!important}.t2{color:var(--tone-2)!important}.t3{color:var(--tone-3)!important}
+  .t4{color:var(--tone-4)!important}.t5{color:var(--tone-5)!important}
+  .translation{font-size:.95rem;color:#cbd5e1;border-top:1px solid var(--border);padding-top:8px;line-height:1.45}
+  .card-footer{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap}
+  .meta{font-size:.72rem;color:var(--text-dim)}
+
+  .modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.75);-webkit-backdrop-filter:blur(4px);
+    backdrop-filter:blur(4px);z-index:1000;justify-content:center;align-items:flex-end;padding:0}
+  .modal-overlay.active{display:flex}
+  @media (min-width:620px){.modal-overlay{align-items:center;padding:20px}}
+  .modal-card{background:var(--card-bg);border:1px solid var(--border);border-radius:16px 16px 0 0;
+    padding:18px;width:100%;max-width:480px;max-height:92vh;overflow:auto;
+    padding-bottom:calc(18px + env(safe-area-inset-bottom,0px))}
+  @media (min-width:620px){.modal-card{border-radius:14px}}
+  .modal-card h3{margin:0 0 4px;font-size:1.05rem}
+  .modal-card .sub{margin:0 0 6px;font-size:.76rem;color:var(--text-dim);line-height:1.45}
+  .modal-card label{display:block;font-size:.78rem;color:var(--text-dim);margin:14px 0 4px;font-weight:600}
+  .modal-card input,.modal-card select{width:100%;background:var(--bg);border:1px solid var(--border);color:#fff;
+    padding:10px;border-radius:8px;font-size:16px}
+  .inline-row{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:8px}
+  .status{font-size:.76rem;color:var(--text-dim);line-height:1.45;word-break:break-word;flex:1 1 100%}
+  .status.ok{color:var(--success)}.status.err{color:var(--danger)}.status.warn{color:var(--warn)}
+  .fine{margin-top:16px;font-size:.72rem;color:var(--text-dim);line-height:1.5;
+    border-top:1px solid var(--border);padding-top:10px}
+  footer{margin-top:22px;padding-top:12px;border-top:1px solid var(--border);
+    font-size:.72rem;color:var(--text-dim);text-align:center;line-height:1.6}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="brand">
+    <h1>Pinyin &amp; English Reader Studio<span class="ver">v2.0</span></h1>
+    <p>Template vuoto · modello e chiave si impostano dal vivo · testi dall'area qui sotto</p>
+  </div>
+  <div class="header-actions">
+    <button class="btn" id="btn-settings" type="button">⚙︎ Imposta</button>
+    <button class="btn btn-danger" id="btn-reset" type="button" title="Svuota memoria, testo e documento">⟲ Reset</button>
+  </div>
+</header>
+
+<textarea id="raw-text" placeholder="Incolla qui il testo (cinese o inglese) e tocca «Elabora AI»…" spellcheck="false"></textarea>
+
+<div class="controls-row">
+  <div class="toolbar-group">
+    <button class="btn" type="button" data-rate="0.5" onclick="setSpeed(0.5, this)">0.5x</button>
+    <button class="btn active" type="button" data-rate="0.75" onclick="setSpeed(0.75, this)">0.75x</button>
+    <button class="btn" type="button" data-rate="1" onclick="setSpeed(1, this)">1.0x</button>
+    <button id="pinyin-toggle" class="btn active" type="button" onclick="togglePinyinVisibility()">拼 ON</button>
+  </div>
+  <div class="toolbar-group">
+    <button id="global-play-btn" class="btn" type="button" onclick="handleGlobalSpeech()">▶ Tutto</button>
+    <button id="global-stop-btn" class="btn" type="button" onclick="stopAllSpeech()" style="display:none">⏹</button>
+    <button id="process-btn" class="btn-main" type="button" onclick="processText()">Elabora AI</button>
+  </div>
+</div>
+
+<div id="telemetry-box" class="telemetry-bar"><span id="telemetry-summary">Pronto</span></div>
+<div id="alert-box" class="alert"></div>
+
+<div id="content" class="cards"></div>
+
+<!-- ===================== IMPOSTAZIONI ===================== -->
+<div id="key-modal" class="modal-overlay">
+  <div class="modal-card">
+    <h3>⚙︎ Impostazioni · OpenRouter</h3>
+    <p class="sub">I valori restano nel <b>localStorage di questo dispositivo</b>: la chiave non viene mai scritta nel file HTML pubblicato né inviata ad altri server.</p>
+
+    <label for="api-key-input">Chiave API</label>
+    <input type="password" id="api-key-input" placeholder="sk-or-v1-…" autocomplete="off" autocapitalize="off" spellcheck="false">
+    <div class="inline-row">
+      <button class="btn btn-mini" type="button" id="btn-toggle-key">Mostra</button>
+      <button class="btn btn-mini" type="button" id="btn-clear-key">Cancella chiave</button>
+      <button class="btn btn-mini" type="button" id="btn-test-key">Verifica chiave</button>
+      <span class="status" id="key-status"></span>
+    </div>
+
+    <label for="endpoint-select">Endpoint</label>
+    <select id="endpoint-select">
+      <option value="https://openrouter.ai/api/v1">Globale · openrouter.ai</option>
+      <option value="https://eu.openrouter.ai/api/v1">Unione Europea · eu.openrouter.ai</option>
+      <option value="https://us.openrouter.ai/api/v1">Stati Uniti · us.openrouter.ai</option>
+    </select>
+
+    <label for="model-preset">Modello preimpostato</label>
+    <select id="model-preset" onchange="handleModelPresetChange(this.value)"></select>
+
+    <div id="custom-model-wrapper" style="display:none">
+      <label for="custom-model-input">Identificativo modello</label>
+      <input type="text" id="custom-model-input" placeholder="es. google/gemini-3.8-flash" autocapitalize="off" spellcheck="false">
+    </div>
+
+    <div class="inline-row">
+      <button class="btn btn-mini" type="button" id="btn-load-catalog">🔄 Carica catalogo OpenRouter</button>
+      <span class="status" id="catalog-status"></span>
+    </div>
+
+    <div class="inline-row" style="justify-content:flex-end;margin-top:18px">
+      <button class="btn" type="button" onclick="closeKeyModal()">Annulla</button>
+      <button class="btn-main" type="button" onclick="saveSettings()">Salva</button>
+    </div>
+
+    <p class="fine">Suggerimento: gli alias <code>~provider/modello-latest</code> seguono automaticamente l'ultima release della famiglia. Il catalogo completo è letto in diretta da <code>/api/v1/models</code> solo quando lo richiedi.</p>
+  </div>
+</div>
+
+<footer>
+  Pinyin &amp; English Reader Studio <b>v2.0</b> · template autonomo, funziona offline (l'elaborazione AI richiede connessione)<br>
+  La sintesi vocale usa le voci di sistema: per il cinese installa la voce in Impostazioni ▸ Accessibilità ▸ Contenuti pronunciati ▸ Voci ▸ Cinese.
+</footer>
+
+<script>
+(function(){
+'use strict';
+
+/* ============================== COSTANTI ============================== */
+var APP_VERSION = '2.0';
+var DEFAULT_MODEL = '~google/gemini-flash-latest';
+
+/* Modelli consigliati — verificati su openrouter.ai (ottobre 2026).
+   Gli alias con "~" puntano sempre all'ultima release della famiglia. */
+var PRESETS = [
+  { id:'~google/gemini-flash-latest',      label:'Gemini Flash · always-latest (rapido ed economico)' },
+  { id:'google/gemini-3.8-flash',          label:'Gemini 3.8 Flash · 02/09/2026' },
+  { id:'~anthropic/claude-haiku-latest',   label:'Claude Haiku · always-latest (accurato)' },
+  { id:'anthropic/claude-haiku-5.5',       label:'Claude Haiku 5.5 · 07/10/2026' },
+  { id:'~deepseek/deepseek-flash-latest',  label:'DeepSeek Flash · always-latest (ottimo sul cinese)' },
+  { id:'~deepseek/deepseek-pro-latest',    label:'DeepSeek Pro · always-latest (massima qualità)' }
+];
+
+var LS = {
+  key:'openrouter_api_key',
+  model:'openrouter_model',
+  endpoint:'openrouter_endpoint',
+  input:'pinyin_cached_input',
+  output:'pinyin_cached_output',
+  telemetry:'pinyin_cached_telemetry'   /* chiave storica v1.0: viene rimossa dal Reset */
+};
+
+/* ============================== STORAGE SICURO (iOS) ============================== */
+function lsGet(k){ try{ return localStorage.getItem(k); }catch(e){ return null; } }
+function lsSet(k,v){ try{ localStorage.setItem(k,v); }catch(e){} }
+function lsDel(k){ try{ localStorage.removeItem(k); }catch(e){} }
+
+/* ============================== STATO ============================== */
+var currentPlaybackRate = 0.75;
+var isPinyinVisible = true;
+var loadedData = [];
+var detectedLang = 'zh-CN';
+
+var globalIndex = 0;
+var isGlobalPlaying = false;
+var currentParagraphIndex = null;
+var speechGen = 0;               /* generazione della coda vocale: invalida i callback vecchi */
+var voicesCache = [];
+
+/* ============================== RIFERIMENTI DOM ============================== */
+function $(id){ return document.getElementById(id); }
+var rawTextEl   = $('raw-text'),
+    contentEl   = $('content'),
+    alertEl     = $('alert-box'),
+    telemetryEl = $('telemetry-box'),
+    telemetrySummary = $('telemetry-summary'),
+    gPlayBtn    = $('global-play-btn'),
+    gStopBtn    = $('global-stop-btn'),
+    processBtn  = $('process-btn');
+
+/* ============================== UI: AVVISI ============================== */
+function showAlert(msg){
+  if(!alertEl) return;
+  alertEl.innerHTML = '<b>Errore:</b> ';
+  alertEl.appendChild(document.createTextNode(String(msg || 'errore sconosciuto')));
+  alertEl.classList.add('active');
+}
+function clearAlert(){ if(alertEl){ alertEl.classList.remove('active'); alertEl.textContent = ''; } }
+function setStatus(el, msg, kind){
+  if(!el) return;
+  el.textContent = msg || '';
+  el.className = 'status' + (kind ? ' ' + kind : '');
+}
+
+function renderEmptyState(){
+  contentEl.innerHTML =
+    '<div class="empty">' +
+      '<h2>Template vuoto · v' + APP_VERSION + '</h2>' +
+      '<ol>' +
+        '<li>Tocca <b>⚙︎ Imposta</b>, incolla la <b>chiave API OpenRouter</b> e scegli un <b>modello preimpostato</b>, poi <b>Salva</b>.</li>' +
+        '<li>Incolla il testo nell\'area in alto (cinese o inglese) e tocca <b>Elabora AI</b>.</li>' +
+        '<li>Ogni paragrafo diventa una scheda con pinyin colorato per tono, traduzione italiana e audio.</li>' +
+        '<li><b>⟲ Reset</b> svuota area di testo, documento e memoria del dispositivo.</li>' +
+      '</ol>' +
+      '<p style="margin:10px 0 0">Suggerimenti: <code>拼 ON/OFF</code> mostra o nasconde il pinyin, ' +
+      '<code>0.5x–1.0x</code> regola la velocità, <code>▶ Tutto</code> legge l\'intero testo in sequenza, ' +
+      'toccando una parola la senti isolata.</p>' +
+    '</div>';
+}
+
+/* ============================== RESET ============================== */
+function resetAll(askConfirm){
+  var msg = 'Reset completo?\n\nVengono cancellati:\n' +
+            '· il testo nell\'area di input e il documento elaborato\n' +
+            '· la memoria locale del dispositivo (chiave API, modello, endpoint)';
+  if(askConfirm !== false && !window.confirm(msg)) return;
+
+  stopAllSpeech();
+  lsDel(LS.input); lsDel(LS.output); lsDel(LS.telemetry);
+  lsDel(LS.key); lsDel(LS.model); lsDel(LS.endpoint);
+
+  if(rawTextEl) rawTextEl.value = '';
+  loadedData = [];
+  detectedLang = 'zh-CN';
+  renderEmptyState();
+
+  if(telemetryEl){ telemetryEl.classList.remove('active'); telemetrySummary.textContent = 'Pronto'; }
+  clearAlert();
+
+  /* ripristino dei controlli ai valori di fabbrica */
+  currentPlaybackRate = 0.75;
+  Array.prototype.forEach.call(document.querySelectorAll('[data-rate]'), function(b){
+    b.classList.toggle('active', b.getAttribute('data-rate') === '0.75');
+  });
+  isPinyinVisible = true;
+  document.body.classList.remove('hide-pinyin');
+  var pt = $('pinyin-toggle');
+  if(pt){ pt.innerText = '拼 ON'; pt.classList.add('active'); }
+
+  /* campi della finestra impostazioni */
+  if($('api-key-input')) $('api-key-input').value = '';
+  if($('custom-model-input')) $('custom-model-input').value = '';
+  if($('endpoint-select')) $('endpoint-select').value = 'https://openrouter.ai/api/v1';
+  setStatus($('key-status'), 'memoria locale svuotata', 'warn');
+}
+
+/* ============================== VISIBILITÀ PINYIN ============================== */
+function togglePinyinVisibility(){
+  isPinyinVisible = !isPinyinVisible;
+  var btn = $('pinyin-toggle');
+  if(isPinyinVisible){
+    document.body.classList.remove('hide-pinyin');
+    btn.innerText = '拼 ON'; btn.classList.add('active');
+  } else {
+    document.body.classList.add('hide-pinyin');
+    btn.innerText = '拼 OFF'; btn.classList.remove('active');
+  }
+}
+
+/* ============================== VELOCITÀ ============================== */
+function setSpeed(rate, el){
+  currentPlaybackRate = rate;
+  Array.prototype.forEach.call(document.querySelectorAll('[data-rate]'), function(b){ b.classList.remove('active'); });
+  if(el) el.classList.add('active');
+}
+
+/* ============================== TONI PINYIN ============================== */
+function getToneClass(pinyin){
+  if(!pinyin) return 't5';
+  if(/[\u0101\u0113\u012b\u014d\u016b\u01d6]/.test(pinyin)) return 't1';
+  if(/[\u00e1\u00e9\u00ed\u00f3\u00fa\u01d8]/.test(pinyin)) return 't2';
+  if(/[\u01ce\u011b\u01d0\u01d2\u01d4\u01da]/.test(pinyin)) return 't3';
+  if(/[\u00e0\u00e8\u00ec\u00f2\u00f9\u01dc]/.test(pinyin)) return 't4';
+  return 't5';
+}
+
+/* ============================== SINTESI VOCALE ============================== */
+function loadVoices(){ try{ voicesCache = window.speechSynthesis ? (window.speechSynthesis.getVoices() || []) : []; }catch(e){ voicesCache = []; } }
+function pickVoice(lang){
+  if(!voicesCache.length) loadVoices();
+  var want = String(lang || '').toLowerCase();
+  var prefix = want.slice(0,2) || 'zh';
+  var hits = voicesCache.filter(function(v){ return (v.lang || '').toLowerCase().indexOf(prefix) === 0; });
+  for(var i=0;i<hits.length;i++){
+    if((hits[i].lang || '').toLowerCase().replace('_','-').indexOf(want) === 0) return hits[i];
+  }
+  return hits[0] || null;
+}
+
+/* iOS tronca le utterance lunghe: si legge a blocchi brevi, tagliando sulla punteggiatura. */
+function splitForSpeech(text){
+  var clean = String(text || '').replace(/\s+/g, ' ').trim();
+  if(!clean) return [];
+  var parts = clean.match(/[^。！？；，、,.!?;:]+[。！？；，、,.!?;:]?/g) || [clean];
+  var out = [], buf = '';
+  parts.forEach(function(p){
+    if((buf + p).length > 150 && buf){ out.push(buf.trim()); buf = p; }
+    else { buf += p; }
+  });
+  if(buf.trim()) out.push(buf.trim());
+  return out;
+}
+
+function cancelSpeech(){
+  speechGen++;
+  try{ window.speechSynthesis.cancel(); }catch(e){}
+}
+
+/* Legge un testo a blocchi; done() viene chiamato solo se la coda non è stata invalidata. */
+function speakText(text, lang, done){
+  if(!('speechSynthesis' in window)){ if(done) done(); return; }
+  cancelSpeech();
+  var myGen = speechGen;
+  var chunks = splitForSpeech(text);
+  if(!chunks.length){ if(done) done(); return; }
+  var i = 0;
+
+  function next(){
+    if(myGen !== speechGen) return;
+    if(i >= chunks.length){ if(done) done(); return; }
+    var u = new SpeechSynthesisUtterance(chunks[i++]);
+    u.lang = lang || detectedLang || 'zh-CN';
+    u.rate = currentPlaybackRate;
+    u.pitch = 1;
+    var v = pickVoice(u.lang);
+    if(v) u.voice = v;
+    u.onend = next;
+    u.onerror = function(){ if(myGen === speechGen) next(); };
+    try{ window.speechSynthesis.speak(u); }catch(e){ if(done) done(); }
+  }
+  /* su WebKit dopo cancel() serve un attimo prima di poter accodare */
+  setTimeout(next, 60);
+}
+
+function speakWord(text, lang){
+  var myGenSnapshot = speechGen;
+  speakText(text, lang, null);
+  /* se nel frattempo parte una lettura globale, questa resta valida: nessuna azione extra */
+  void myGenSnapshot;
+}
+
+/* ---- lettura per singolo paragrafo ---- */
+function toggleParagraphSpeech(index){
+  var btn = $('play-btn-' + index);
+  if(window.speechSynthesis && window.speechSynthesis.speaking && currentParagraphIndex === index){
+    if(window.speechSynthesis.paused){
+      window.speechSynthesis.resume();
+      if(btn) btn.innerText = '⏸ Pausa';
+    } else {
+      window.speechSynthesis.pause();
+      if(btn) btn.innerText = '▶ Riprendi';
+    }
+    return;
+  }
+  stopAllSpeech();
+  currentParagraphIndex = index;
+  if(btn) btn.innerText = '⏸ Pausa';
+  var item = loadedData[index];
+  if(!item) return;
+  var text = item.s || (item.words || []).map(function(w){ return w.h || ''; }).join('');
+  speakText(text, item.lang || detectedLang, function(){
+    if(btn) btn.innerText = '▶ Ascolta';
+    currentParagraphIndex = null;
+  });
+}
+
+/* ---- lettura globale ---- */
+function handleGlobalSpeech(){
+  if(!loadedData.length) return;
+  if(window.speechSynthesis && window.speechSynthesis.speaking && isGlobalPlaying){
+    if(window.speechSynthesis.paused){
+      window.speechSynthesis.resume();
+      gPlayBtn.innerText = '⏸ Pausa';
+    } else {
+      window.speechSynthesis.pause();
+      gPlayBtn.innerText = '▶ Riprendi';
+    }
+    return;
+  }
+  stopAllSpeech();
+  isGlobalPlaying = true;
+  globalIndex = 0;
+  gPlayBtn.innerText = '⏸ Pausa';
+  gStopBtn.style.display = 'inline-block';
+  playNextInSequence();
+}
+
+function playNextInSequence(){
+  if(!isGlobalPlaying || globalIndex >= loadedData.length){ stopAllSpeech(); return; }
+  Array.prototype.forEach.call(document.querySelectorAll('.card'), function(c){ c.classList.remove('speaking-card'); });
+  var card = $('card-' + globalIndex);
+  if(card){
+    card.classList.add('speaking-card');
+    try{ card.scrollIntoView({ behavior:'smooth', block:'nearest' }); }catch(e){}
+  }
+  var item = loadedData[globalIndex];
+  var text = item.s || (item.words || []).map(function(w){ return w.h || ''; }).join('');
+  speakText(text, item.lang || detectedLang, function(){
+    globalIndex++;
+    playNextInSequence();
+  });
+}
+
+function stopAllSpeech(){
+  cancelSpeech();
+  isGlobalPlaying = false;
+  currentParagraphIndex = null;
+  if(gPlayBtn) gPlayBtn.innerText = '▶ Tutto';
+  if(gStopBtn) gStopBtn.style.display = 'none';
+  Array.prototype.forEach.call(document.querySelectorAll('.card'), function(c){ c.classList.remove('speaking-card'); });
+  Array.prototype.forEach.call(document.querySelectorAll('[id^="play-btn-"]'), function(b){ b.innerText = '▶ Ascolta'; });
+}
+
+/* ============================== ELABORAZIONE AI ============================== */
+function buildPrompt(text){
+  return 'Analizza il testo in fondo preservando la suddivisione in FRASI/PARAGRAFI INTERI.\n' +
+  'Il testo può essere in CINESE o in INGLESE.\n\n' +
+  'Regole di output:\n' +
+  '1. Identifica la lingua e usa "lang": "zh-CN" per il cinese, "en-US" per l\'inglese.\n' +
+  '2. Rispondi ESCLUSIVAMENTE con un array JSON, senza commenti e senza recinti di codice.\n' +
+  '3. Struttura esatta:\n' +
+  '[\n' +
+  '  {\n' +
+  '    "s": "Frase originale completa",\n' +
+  '    "m": "Traduzione integrale in italiano",\n' +
+  '    "lang": "zh-CN",\n' +
+  '    "words": [\n' +
+  '      { "h": "parola o carattere originale", "p": "pīn yīn con accenti tonali" }\n' +
+  '    ]\n' +
+  '  }\n' +
+  ']\n' +
+  '4. Per il cinese: ogni elemento di "words" è una parola o un singolo carattere; in "p" ci deve essere ' +
+  'esattamente una sillaba per ogni carattere Han di "h", separate da uno spazio (es. h:"你好", p:"nǐ hǎo"). ' +
+  'Pinyin contestuale corretto, tono lessicale, tono neutro senza accento.\n' +
+  '5. La punteggiatura è un elemento di "words" con "p": "" (es. { "h": "，", "p": "" }).\n' +
+  '6. Per l\'inglese: "p" sempre stringa vuota "" e ogni elemento di "words" è una parola o un segno.\n' +
+  '7. La concatenazione di tutti i "h" deve ricostruire esattamente la frase "s".\n\n' +
+  'Testo da elaborare:\n' + text;
+}
+
+function endpointBase(){
+  return (lsGet(LS.endpoint) || 'https://openrouter.ai/api/v1').replace(/\/+$/, '');
+}
+
+function processText(){
+  var text = (rawTextEl.value || '').trim();
+  if(!text){ showAlert('Inserisci prima un testo da elaborare.'); rawTextEl.focus(); return; }
+
+  var apiKey = lsGet(LS.key);
+  if(!apiKey){ openKeyModal(); setStatus($('key-status'), 'chiave API mancante: inseriscila e salva', 'warn'); return; }
+
+  clearAlert();
+  stopAllSpeech();
+  lsSet(LS.input, text);
+
+  var model = lsGet(LS.model) || DEFAULT_MODEL;
+  processBtn.disabled = true;
+  processBtn.innerText = 'Attendi…';
+
+  var startTime = (window.performance && performance.now) ? performance.now() : Date.now();
+  var base = endpointBase();
+
+  fetch(base + '/chat/completions', {
+    method:'POST',
+    headers:{
+      'Authorization':'Bearer ' + apiKey,
+      'Content-Type':'application/json',
+      'HTTP-Referer': window.location.href,
+      'X-Title':'Pinyin & English Reader Studio v' + APP_VERSION
+    },
+    body: JSON.stringify({
+      model: model,
+      messages:[{ role:'user', content: buildPrompt(text) }],
+      temperature: 0.1
+    })
+  }).then(function(response){
+    var duration = ((window.performance && performance.now) ? performance.now() : Date.now()) - startTime;
+    if(!response.ok){
+      return response.text().then(function(t){
+        var msg = 'HTTP ' + response.status;
+        try{ var d = JSON.parse(t); if(d && d.error && d.error.message) msg = d.error.message; }catch(e){}
+        throw new Error(msg);
+      });
+    }
+    return response.json().then(function(data){
+      var choice = data.choices && data.choices[0];
+      var content = choice && choice.message && choice.message.content;
+      if(Array.isArray(content)){ content = content.map(function(p){ return p && p.text ? p.text : ''; }).join(''); }
+      if(typeof content !== 'string' || !content.trim()) throw new Error('Il modello non ha restituito contenuto.');
+
+      var raw = content.trim();
+      var s = raw.indexOf('['), e = raw.lastIndexOf(']');
+      if(s === -1 || e === -1 || e < s) throw new Error('Formato JSON non riconosciuto nella risposta.');
+      var parsed;
+      try{ parsed = JSON.parse(raw.substring(s, e + 1)); }
+      catch(err){ throw new Error('JSON non valido: ' + err.message); }
+      if(!Array.isArray(parsed) || !parsed.length) throw new Error('Array JSON vuoto.');
+
+      loadedData = parsed;
+      lsSet(LS.output, JSON.stringify(loadedData));
+      renderCards(loadedData);
+
+      telemetryEl.classList.add('active');
+      var tokens = '';
+      if(data.usage) tokens = ' | Token: <span class="badge">' + ((data.usage.prompt_tokens||0) + '+' + (data.usage.completion_tokens||0)) + '</span>';
+      telemetrySummary.innerHTML = 'Modello: <span class="badge">' + model + '</span> | Tempo: <span class="badge">' +
+        (duration/1000).toFixed(2) + 's</span>' + tokens + ' | Paragrafi: <span class="badge">' + loadedData.length + '</span>';
+    });
+  }).catch(function(err){
+    var m = err && err.message ? err.message : 'errore sconosciuto';
+    if(/Failed to fetch|Load failed|NetworkError/i.test(m)) m = 'richiesta bloccata: la pagina deve essere aperta in HTTPS (es. GitHub Pages) e la rete raggiungibile.';
+    showAlert(m);
+    telemetryEl.classList.add('active');
+    telemetrySummary.textContent = 'Ultima elaborazione non riuscita';
+  }).then(function(){
+    processBtn.disabled = false;
+    processBtn.innerText = 'Elabora AI';
+  });
+}
+
+/* ============================== RENDERING SCHEDE ============================== */
+function renderCards(data){
+  contentEl.innerHTML = '';
+  if(!Array.isArray(data) || !data.length){ renderEmptyState(); return; }
+
+  data.forEach(function(item, idx){
+    var card = document.createElement('div');
+    card.className = 'card';
+    card.id = 'card-' + idx;
+
+    var sentenceDiv = document.createElement('div');
+    sentenceDiv.className = 'sentence-container';
+    detectedLang = item.lang || (/[\u3400-\u9fff]/.test(item.s || '') ? 'zh-CN' : 'en-US');
+
+    var words = item.words || [];
+    words.forEach(function(token){
+      var textToken = token.h || '';
+      var pinyin = (token.p || '').trim();
+
+      /* Punteggiatura e spazi */
+      if(!pinyin && /^[，。！？、“”‘’《》；：…,.!?;:—\-"'()\[\] ]+$/.test(textToken)){
+        var punct = document.createElement('span');
+        punct.className = 'punctuation';
+        punct.textContent = textToken;
+        sentenceDiv.appendChild(punct);
+        return;
+      }
+
+      /* Ramo inglese / token senza pinyin */
+      if(detectedLang === 'en-US' || !pinyin){
+        var engSpan = document.createElement('span');
+        engSpan.className = 'english-word';
+        engSpan.textContent = textToken;
+        engSpan.addEventListener('click', function(){ speakWord(textToken, 'en-US'); });
+        sentenceDiv.appendChild(engSpan);
+        return;
+      }
+
+      /* Ramo cinese: un <ruby> per carattere quando le sillabe combaciano */
+      var wordSpan = document.createElement('span');
+      wordSpan.className = 'word-token';
+      wordSpan.addEventListener('click', function(){ speakWord(textToken, 'zh-CN'); });
+
+      var syllables = pinyin.split(/\s+/).filter(function(s){ return s.length; });
+      var chars = Array.from(textToken);
+
+      if(syllables.length === chars.length){
+        chars.forEach(function(c, i){
+          var ruby = document.createElement('ruby');
+          ruby.appendChild(document.createTextNode(c));
+          var rt = document.createElement('rt');
+          rt.className = getToneClass(syllables[i]);
+          rt.textContent = syllables[i];
+          ruby.appendChild(rt);
+          wordSpan.appendChild(ruby);
+        });
+      } else {
+        var ruby2 = document.createElement('ruby');
+        ruby2.appendChild(document.createTextNode(textToken));
+        var rt2 = document.createElement('rt');
+        rt2.className = getToneClass(pinyin);
+        rt2.textContent = pinyin;
+        ruby2.appendChild(rt2);
+        wordSpan.appendChild(ruby2);
+      }
+      sentenceDiv.appendChild(wordSpan);
+    });
+
+    var trans = document.createElement('div');
+    trans.className = 'translation';
+    trans.textContent = item.m || '';
+
+    var footer = document.createElement('div');
+    footer.className = 'card-footer';
+
+    var playBtn = document.createElement('button');
+    playBtn.className = 'btn';
+    playBtn.type = 'button';
+    playBtn.id = 'play-btn-' + idx;
+    playBtn.innerHTML = '▶ Ascolta';
+    playBtn.addEventListener('click', function(){ toggleParagraphSpeech(idx); });
+
+    var meta = document.createElement('span');
+    meta.className = 'meta';
+    meta.textContent = 'Paragrafo ' + (idx + 1) + ' di ' + data.length;
+
+    footer.appendChild(playBtn);
+    footer.appendChild(meta);
+    card.appendChild(sentenceDiv);
+    card.appendChild(trans);
+    card.appendChild(footer);
+    contentEl.appendChild(card);
+  });
+}
+
+/* ============================== IMPOSTAZIONI: MODELLI ============================== */
+function fillPresetSelect(){
+  var sel = $('model-preset');
+  sel.innerHTML = '';
+
+  var og = document.createElement('optgroup');
+  og.label = 'Consigliati';
+  PRESETS.forEach(function(m){ og.appendChild(modelOption(m.id, m.label)); });
+  sel.appendChild(og);
+
+  var current = lsGet(LS.model) || DEFAULT_MODEL;
+  var exists = PRESETS.some(function(m){ return m.id === current; });
+  if(exists){
+    sel.value = current;
+    handleModelPresetChange(current);
+  } else if(current){
+    var og2 = document.createElement('optgroup');
+    og2.label = 'Salvato su questo dispositivo';
+    og2.appendChild(modelOption(current, current));
+    sel.appendChild(og2);
+    sel.value = current;
+    handleModelPresetChange(current);
+  } else {
+    sel.value = DEFAULT_MODEL;
+    handleModelPresetChange(DEFAULT_MODEL);
+  }
+
+  var og3 = document.createElement('optgroup');
+  og3.label = 'Altro';
+  og3.appendChild(modelOption('custom', 'Altro modello personalizzato…'));
+  sel.appendChild(og3);
+}
+function modelOption(value, label){
+  var o = document.createElement('option');
+  o.value = value;
+  o.textContent = label;
+  return o;
+}
+function handleModelPresetChange(val){
+  var w = $('custom-model-wrapper');
+  if(w) w.style.display = (val === 'custom') ? 'block' : 'none';
+}
+
+function loadCatalog(){
+  var st = $('catalog-status');
+  setStatus(st, 'lettura catalogo da ' + endpointBase() + '…');
+  var sel = $('model-preset');
+  var current = sel.value;
+
+  fetch(endpointBase() + '/models')
+    .then(function(r){ if(!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
+    .then(function(d){
+      var list = (d && d.data) || [];
+      var groups = [
+        ['Google · famiglia Flash', function(id){ return /^google\//.test(id) && /flash/.test(id); }],
+        ['Anthropic · famiglia Haiku', function(id){ return /^anthropic\//.test(id) && /haiku/.test(id); }],
+        ['DeepSeek', function(id){ return /^(~)?deepseek\//.test(id); }],
+        ['Altri modelli', function(id){ return !/^google\//.test(id) && !/^anthropic\//.test(id) && !/deepseek\//.test(id); }]
+      ];
+      var used = 0;
+      groups.forEach(function(g){
+        var items = list.filter(function(m){ return g[1](m.id || ''); })
+                        .sort(function(a,b){ return (b.created || 0) - (a.created || 0); })
+                        .slice(0, 40);
+        if(!items.length) return;
+        var og = document.createElement('optgroup');
+        og.label = g[0] + ' (' + items.length + ')';
+        items.forEach(function(m){ og.appendChild(modelOption(m.id, (m.name || m.id) + '  ·  ' + m.id)); });
+        sel.appendChild(og);
+        used += items.length;
+      });
+      /* l'opzione "custom" resta sempre in fondo */
+      var customOpt = Array.prototype.filter.call(sel.options, function(o){ return o.value === 'custom'; })[0];
+      if(customOpt && customOpt.parentNode) sel.appendChild(customOpt.parentNode);
+
+      sel.value = current;
+      setStatus(st, '✓ catalogo live: ' + list.length + ' modelli, ' + used + ' mostrati per famiglia.', 'ok');
+    })
+    .catch(function(err){
+      setStatus(st, '✕ catalogo non raggiungibile (' + (err && err.message ? err.message : 'errore') + '): restano i modelli consigliati e l\'ID manuale.', 'err');
+    });
+}
+
+/* ============================== IMPOSTAZIONI: FINESTRA ============================== */
+function openKeyModal(){
+  $('api-key-input').value = lsGet(LS.key) || '';
+  $('endpoint-select').value = lsGet(LS.endpoint) || 'https://openrouter.ai/api/v1';
+  fillPresetSelect();
+  var m = $('model-preset').value;
+  if(m === 'custom' || !PRESETS.some(function(p){ return p.id === m; })){
+    /* modello salvato non presente nei preset: mostralo nel campo manuale */
+    if(m && m !== 'custom') $('custom-model-input').value = m;
+  }
+  setStatus($('key-status'), '');
+  setStatus($('catalog-status'), '');
+  $('key-modal').classList.add('active');
+}
+function closeKeyModal(){ $('key-modal').classList.remove('active'); }
+
+function saveSettings(){
+  var key = ($('api-key-input').value || '').trim();
+  if(key) lsSet(LS.key, key); else lsDel(LS.key);
+  lsSet(LS.endpoint, $('endpoint-select').value || 'https://openrouter.ai/api/v1');
+
+  var preset = $('model-preset').value;
+  var finalModel = (preset === 'custom')
+    ? (($('custom-model-input').value || '').trim() || DEFAULT_MODEL)
+    : preset;
+  lsSet(LS.model, finalModel);
+  closeKeyModal();
+}
+
+function testKey(){
+  var key = ($('api-key-input').value || '').trim() || lsGet(LS.key) || '';
+  var st = $('key-status');
+  if(!key){ setStatus(st, 'chiave vuota: incollala prima di verificare.', 'err'); return; }
+  setStatus(st, 'verifica in corso…');
+  fetch(($('endpoint-select').value || 'https://openrouter.ai/api/v1').replace(/\/+$/, '') + '/key', {
+    headers:{ 'Authorization':'Bearer ' + key }
+  }).then(function(r){
+    return r.text().then(function(t){
+      var d = null; try{ d = JSON.parse(t); }catch(e){}
+      if(!r.ok) throw new Error((d && d.error && d.error.message) || ('HTTP ' + r.status));
+      var info = (d && d.data) || d || {};
+      var label = info.label || 'chiave';
+      var usage = (typeof info.usage === 'number') ? info.usage : null;
+      setStatus(st, '✓ ' + label + (usage !== null ? ' · credito usato ' + usage.toFixed(4) : '') + ' · valida', 'ok');
+    });
+  }).catch(function(err){
+    setStatus(st, '✕ ' + (err && err.message ? err.message : 'verifica non riuscita'), 'err');
+  });
+}
+
+/* ============================== AVVIO ============================== */
+function init(){
+  loadVoices();
+  if(window.speechSynthesis && 'onvoiceschanged' in window.speechSynthesis){
+    window.speechSynthesis.onvoiceschanged = loadVoices;
+  }
+
+  $('btn-settings').addEventListener('click', openKeyModal);
+  $('btn-reset').addEventListener('click', function(){ resetAll(true); });
+  $('btn-toggle-key').addEventListener('click', function(){
+    var i = $('api-key-input');
+    var show = i.type === 'password';
+    i.type = show ? 'text' : 'password';
+    this.textContent = show ? 'Nascondi' : 'Mostra';
+  });
+  $('btn-clear-key').addEventListener('click', function(){
+    $('api-key-input').value = '';
+    lsDel(LS.key);
+    setStatus($('key-status'), 'chiave rimossa dal dispositivo', 'warn');
+  });
+  $('btn-test-key').addEventListener('click', testKey);
+  $('btn-load-catalog').addEventListener('click', loadCatalog);
+
+  /* chiusura toccando lo sfondo */
+  $('key-modal').addEventListener('click', function(ev){ if(ev.target === this) closeKeyModal(); });
+
+  /* ripristino sessione (se non è stato fatto Reset) */
+  var savedInput = lsGet(LS.input);
+  if(savedInput) rawTextEl.value = savedInput;
+
+  var savedOutput = lsGet(LS.output);
+  if(savedOutput){
+    try{
+      loadedData = JSON.parse(savedOutput);
+      if(Array.isArray(loadedData) && loadedData.length) renderCards(loadedData);
+      else renderEmptyState();
+    }catch(e){ renderEmptyState(); }
+  } else {
+    renderEmptyState();
+  }
+
+  /* risparmio: l'input viene memorizzato quando si elabora; qui si aggiorna a ogni modifica */
+  rawTextEl.addEventListener('change', function(){ lsSet(LS.input, rawTextEl.value); });
+
+  /* prima apertura: se manca la chiave, apri subito Configura */
+  if(!lsGet(LS.key)){ openKeyModal(); setStatus($('key-status'), 'prima configurazione: incolla la chiave e scegli un modello', 'warn'); }
+}
+
+if(document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
+else init();
+
+/* ============================== API PUBBLICA (per tasti inline) ============================== */
+window.setSpeed = setSpeed;
+window.togglePinyinVisibility = togglePinyinVisibility;
+window.handleGlobalSpeech = handleGlobalSpeech;
+window.stopAllSpeech = stopAllSpeech;
+window.processText = processText;
+window.openKeyModal = openKeyModal;
+window.closeKeyModal = closeKeyModal;
+window.saveSettings = saveSettings;
+window.handleModelPresetChange = handleModelPresetChange;
+
+})();
+</script>
+</body>
+</html>
