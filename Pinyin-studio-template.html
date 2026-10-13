@@ -1,45 +1,72 @@
 <!DOCTYPE html>
-<html lang="it" data-app="pinyin-reader-studio" data-version="2.0">
+<html lang="it" data-app="pinyin-reader-studio" data-version="3.0">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="color-scheme" content="dark">
-<meta name="application-name" content="Pinyin & English Reader Studio v2.0">
-<title>Pinyin &amp; English Reader Studio v2.0</title>
+<meta name="color-scheme" content="light dark">
+<meta name="application-name" content="Pinyin &amp; English Reader Studio v3.0">
+<title>Pinyin &amp; English Reader Studio v3.0</title>
 <!--
 ==========================================================================================
   PINYIN & ENGLISH READER STUDIO — TEMPLATE VUOTO
-  Versione interna: 2.0  ·  data: 2026-10-13  ·  file singolo, autonomo, offline-first
+  Versione interna: 3.0  ·  data: 2026-10-13  ·  file singolo, autonomo, offline-first
 ------------------------------------------------------------------------------------------
-  NOTA SULLE MODIFICHE RISPETTO ALLA v1.0 (file pubblicato "Pinyin_studio_pro.html")
-  [1] Il file è un TEMPLATE VUOTO: nessun testo pre-tradotto, nessun contenuto di esempio.
-      Al momento della pubblicazione su GitHub non contiene né testi né chiavi API.
-  [2] Titolo con numero di versione interno (title, <html data-version>, badge in intestazione
-      e nel footer) per riconoscere subito la build pubblicata.
-  [3] Pulsante "⚙︎ Imposta" potenziato: chiave API, endpoint (globale / EU / US), modello
-      preimpostato, catalogo OpenRouter opzionale, ID modello personalizzato, verifica chiave.
-  [4] Pulsante "⟲ Reset" (sostituisce "✓ Esci"): svuota memoria, area di testo, documento,
-      telemetria e — su conferma — anche chiave, modello ed endpoint salvati sul dispositivo.
-  [5] Modelli preimpostati aggiornati: gli ID della v1.0 (gemini-2.5-flash, claude-3.5-haiku,
-      gpt-4o-mini, deepseek-chat) sono obsoleti o deprecati; ora si usano gli alias
-      "always-latest" e le build correnti.
-  [6] Correzione zoom automatico di iOS: campi e textarea a 16px (sotto i 16px WebKit
-      ingrandisce la pagina al focus e non la ripristina).
-  [7] Sintesi vocale: scelta esplicita della voce cinese, lettura a blocchi brevi
-      (iOS tronca le utterance lunghe) e gestione sicurezza/stato con generazione.
-  [8] Contratto JSON col modello più stretto: punteggiatura come token con pinyin vuoto,
-      una sillaba per ogni carattere Han, concatenazione dei token = frase originale.
-  [9] Errori mostrati in pagina (riquadro + stato) invece di alert().
-  [10] Rendering costruito con nodi DOM e textContent (nessun innerHTML con dati del modello).
+  MODIFICHE RISPETTO ALLA v2.0 (richieste da Pietro)
+  [1] RESET conservativo: svuota SOLO i dati da elaborare (area di testo, documento, telemetria,
+      sessione vocale). NON tocca più chiave API, modello, endpoint e lingua di traduzione.
+      La rimozione della chiave resta un'azione separata e volontaria ("Cancella chiave").
+  [2] In Impostazioni è stata aggiunta la LINGUA DI TRADUZIONE (Italiano / English), salvata sul
+      dispositivo e usata come lingua di default del testo sotto il cinese.
+  [3] DIREZIONE DI TRADUZIONE BIDIREZIONALE:
+      3a) sorgente cinese → "zh" = frase originale, "m" = traduzione fedele nella lingua di default;
+      3b) sorgente italiano/inglese → "zh" = traduzione in cinese semplificato (con pinyin, colori e
+          segni tonali), "m" = testo nella lingua di default delle impostazioni (l'originale se già
+          in quella lingua, altrimenti la sua traduzione).
+  [4] LEGENDA dei toni sotto i controlli: pallino colorato + numero del tono + segno diacritico.
+  [5] NOTE IN CODA: il modello restituisce anche "notes" (pronuncia, polifonici, tono neutro,
+      eccezioni e casi di sandhi), rese in una scheda finale "Note di lettura".
+  [6] VELOCITÀ DI ASCOLTO: su iOS Safari il motore vocale comprime il parametro `rate`, per cui
+      0.5x e 1.0x differivano molto meno del previsto. Ora la velocità è compensata con pause reali
+      fra i blocchi di lettura (320 ms a 0.5x, 150 ms a 0.75x, nessuna a 1.0x) e con blocchi più
+      corti alle velocità ridotte: la differenza di tempo è così deterministica e misurabile.
+  [7] Aggiunti: tasto "non mostrare traduzione" (etichetta = lingua di default) accanto al tasto
+      "non mostrare pinyin"; tasto TEMA con simboli ☾ / ☀ (chiaro e scuro, entrambi completi).
+  [8] Extra tecnici: sblocco esplicito del motore vocale al primo tocco (WebKit scarta i speak()
+      fuori da un gesto utente) e primo blocco letto in modo sincrono nel gesto.
 ==========================================================================================
 -->
 <style>
   :root{
-    --bg:#0f172a; --card-bg:#1e293b; --text-main:#f8fafc; --text-dim:#94a3b8;
-    --border:#334155; --accent:#38bdf8; --accent-dim:rgba(56,189,248,.15);
+    --bg:#0f172a; --card-bg:#1e293b; --field-bg:#0f172a; --btn-bg:#0f172a;
+    --text-main:#f8fafc; --text-dim:#94a3b8; --trans-fg:#cbd5e1;
+    --border:#334155; --accent:#38bdf8; --on-accent:#0f172a; --accent-dim:rgba(56,189,248,.15);
     --success:#22c55e; --danger:#f43f5e; --warn:#fbbf24;
     --tone-1:#f87171; --tone-2:#4ade80; --tone-3:#60a5fa; --tone-4:#c084fc; --tone-5:#94a3b8;
   }
+  @media (prefers-color-scheme: light){
+    :root:not([data-theme]){
+      --bg:#f5f7fb; --card-bg:#ffffff; --field-bg:#ffffff; --btn-bg:#eef2f7;
+      --text-main:#0f172a; --text-dim:#64748b; --trans-fg:#334155;
+      --border:#dbe3ec; --accent:#0284c7; --on-accent:#ffffff; --accent-dim:rgba(2,132,199,.12);
+      --success:#15803d; --danger:#be123c; --warn:#b45309;
+      --tone-1:#d92d20; --tone-2:#0f9d58; --tone-3:#1a73e8; --tone-4:#7c3aed; --tone-5:#6b7280;
+    }
+  }
+  html[data-theme="light"]{
+    --bg:#f5f7fb; --card-bg:#ffffff; --field-bg:#ffffff; --btn-bg:#eef2f7;
+    --text-main:#0f172a; --text-dim:#64748b; --trans-fg:#334155;
+    --border:#dbe3ec; --accent:#0284c7; --on-accent:#ffffff; --accent-dim:rgba(2,132,199,.12);
+    --success:#15803d; --danger:#be123c; --warn:#b45309;
+    --tone-1:#d92d20; --tone-2:#0f9d58; --tone-3:#1a73e8; --tone-4:#7c3aed; --tone-5:#6b7280;
+  }
+  html[data-theme="dark"]{
+    --bg:#0f172a; --card-bg:#1e293b; --field-bg:#0f172a; --btn-bg:#0f172a;
+    --text-main:#f8fafc; --text-dim:#94a3b8; --trans-fg:#cbd5e1;
+    --border:#334155; --accent:#38bdf8; --on-accent:#0f172a; --accent-dim:rgba(56,189,248,.15);
+    --success:#22c55e; --danger:#f43f5e; --warn:#fbbf24;
+    --tone-1:#f87171; --tone-2:#4ade80; --tone-3:#60a5fa; --tone-4:#c084fc; --tone-5:#94a3b8;
+  }
+
   *{box-sizing:border-box}
   body{
     margin:0;
@@ -52,27 +79,38 @@
   .brand h1{font-size:1.05rem;margin:0;font-weight:600;line-height:1.3}
   .ver{display:inline-block;font-size:.68rem;font-weight:700;letter-spacing:.04em;color:var(--accent);
        background:var(--accent-dim);border-radius:5px;padding:2px 6px;margin-left:6px;vertical-align:2px}
-  .brand p{margin:4px 0 0;font-size:.74rem;color:var(--text-dim);line-height:1.4}
+  .brand p{margin:4px 0 0;font-size:.74rem;color:var(--text-dim);line-height:1.45}
   .header-actions{display:flex;gap:6px;flex-shrink:0}
 
-  .btn{background:var(--bg);color:var(--text-dim);border:1px solid var(--border);padding:7px 11px;
+  .btn{background:var(--btn-bg);color:var(--text-dim);border:1px solid var(--border);padding:7px 11px;
        border-radius:8px;font-size:.82rem;font-weight:600;cursor:pointer;white-space:nowrap}
   .btn:active{transform:scale(.97)}
-  .btn.active{background:var(--accent);color:#0f172a;border-color:var(--accent)}
-  .btn-done{background:var(--success);color:#052e16;border:none;font-weight:700}
+  .btn.active{background:var(--accent);color:var(--on-accent);border-color:var(--accent)}
+  .btn-icon{font-size:1rem;padding:6px 10px;line-height:1.2}
   .btn-danger{color:var(--danger);border-color:var(--danger);background:transparent}
-  .btn-main{background:var(--accent);color:#0f172a;border:none;padding:9px 14px;border-radius:8px;
+  .btn-main{background:var(--accent);color:var(--on-accent);border:none;padding:9px 14px;border-radius:8px;
             font-weight:700;font-size:.88rem;cursor:pointer;white-space:nowrap}
   .btn-main:disabled{opacity:.5}
   .btn-mini{padding:5px 9px;font-size:.76rem}
 
-  textarea,input,select{font-size:16px} /* iOS: sotto 16px WebKit ingrandisce al focus */
+  textarea,input,select{font-size:16px} /* iOS: sotto i 16px WebKit ingrandisce al focus */
   textarea#raw-text{width:100%;height:96px;background:var(--card-bg);border:1px solid var(--border);
     color:var(--text-main);border-radius:10px;padding:12px;resize:vertical;margin-bottom:10px;line-height:1.5}
-  textarea#raw-text::placeholder{color:#64748b}
+  textarea#raw-text::placeholder{color:var(--text-dim);opacity:.75}
 
-  .controls-row{display:flex;justify-content:space-between;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:12px}
+  .controls-row{display:flex;justify-content:space-between;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:8px}
   .toolbar-group{display:flex;gap:5px;align-items:center;flex-wrap:wrap}
+
+  .hint-line{font-size:.72rem;color:var(--text-dim);line-height:1.45;margin:0 0 10px}
+
+  .legend{display:flex;flex-wrap:wrap;gap:10px;align-items:center;background:var(--card-bg);
+    border:1px solid var(--border);border-radius:10px;padding:8px 12px;margin-bottom:12px;font-size:.76rem;color:var(--text-dim)}
+  .legend .lg-title{font-weight:700;color:var(--text-main);margin-right:2px}
+  .legend span.item{display:inline-flex;align-items:center;gap:5px;white-space:nowrap}
+  .dot{width:11px;height:11px;border-radius:50%;display:inline-block;flex-shrink:0}
+  .dot.t1{background:var(--tone-1)}.dot.t2{background:var(--tone-2)}.dot.t3{background:var(--tone-3)}
+  .dot.t4{background:var(--tone-4)}.dot.t5{background:var(--tone-5)}
+  .legend .sign{font-size:.9rem;font-weight:700;color:var(--text-main)}
 
   .telemetry-bar{display:none;background:var(--card-bg);border:1px solid var(--border);border-radius:8px;
     padding:6px 12px;margin-bottom:12px;font-size:.78rem;color:var(--text-dim);
@@ -80,37 +118,44 @@
   .telemetry-bar.active{display:flex}
   .badge{background:var(--accent-dim);color:var(--accent);padding:2px 6px;border-radius:4px;font-weight:600}
 
-  .alert{display:none;border:1px solid var(--danger);border-left-width:4px;background:rgba(244,63,94,.08);
-    color:#fecdd3;border-radius:8px;padding:10px 12px;font-size:.82rem;line-height:1.5;margin-bottom:12px;word-break:break-word}
+  .alert{display:none;border:1px solid var(--danger);border-left-width:4px;background:var(--accent-dim);
+    color:var(--text-main);border-radius:8px;padding:10px 12px;font-size:.82rem;line-height:1.5;margin-bottom:12px;word-break:break-word}
   .alert.active{display:block}
-  .alert b{color:#fff}
+  .alert b{color:var(--danger)}
 
   .empty{background:var(--card-bg);border:1px dashed var(--border);border-radius:12px;padding:16px;
-    text-align:left;color:var(--text-dim);font-size:.84rem;line-height:1.6}
+    color:var(--text-dim);font-size:.84rem;line-height:1.6}
   .empty h2{margin:0 0 10px;font-size:.92rem;color:var(--text-main)}
   .empty ol{margin:0;padding-left:20px}
   .empty li{margin-bottom:6px}
-  .empty code{background:#0f172a;border:1px solid var(--border);border-radius:4px;padding:1px 5px;font-size:.78rem}
+  .empty code{background:var(--btn-bg);border:1px solid var(--border);border-radius:4px;padding:1px 5px;font-size:.78rem;color:var(--text-main)}
 
   .cards{display:flex;flex-direction:column;gap:14px}
   .card{background:var(--card-bg);border-radius:12px;padding:14px;display:flex;flex-direction:column;gap:12px;border:1px solid var(--border)}
   .card.speaking-card{border-color:var(--accent);box-shadow:0 0 10px var(--accent-dim)}
   .sentence-container{display:flex;flex-wrap:wrap;gap:4px 10px;align-items:flex-end;line-height:2.3}
-  .word-token{display:inline-flex;cursor:pointer;border-radius:6px;padding:0 3px;background:rgba(255,255,255,.02);
+  .word-token{display:inline-flex;cursor:pointer;border-radius:6px;padding:0 3px;background:var(--accent-dim);
     border-bottom:2px solid transparent;user-select:none;-webkit-user-select:none}
-  .word-token:active{background:var(--accent-dim);border-bottom-color:var(--accent)}
+  .word-token:active{border-bottom-color:var(--accent)}
   ruby{font-size:1.6rem;color:var(--text-main);ruby-position:over;padding:0 1px}
   rt{font-size:.85rem;font-weight:600;text-align:center;font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text",sans-serif}
   body.hide-pinyin rt{visibility:hidden}
   .punctuation{font-size:1.6rem;color:var(--text-dim);align-self:flex-end;line-height:1.8}
-  .english-word{font-size:1.15rem;color:var(--accent);font-weight:500;padding:2px 4px;cursor:pointer}
   .t1{color:var(--tone-1)!important}.t2{color:var(--tone-2)!important}.t3{color:var(--tone-3)!important}
   .t4{color:var(--tone-4)!important}.t5{color:var(--tone-5)!important}
-  .translation{font-size:.95rem;color:#cbd5e1;border-top:1px solid var(--border);padding-top:8px;line-height:1.45}
+  .translation{font-size:.95rem;color:var(--trans-fg);border-top:1px solid var(--border);padding-top:8px;line-height:1.45}
+  body.hide-trans .translation{display:none}
   .card-footer{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap}
   .meta{font-size:.72rem;color:var(--text-dim)}
 
-  .modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.75);-webkit-backdrop-filter:blur(4px);
+  .notes-card{background:var(--card-bg);border:1px solid var(--border);border-left:4px solid var(--accent);
+    border-radius:12px;padding:14px 16px;margin-top:14px}
+  .notes-card h2{margin:0 0 8px;font-size:.95rem}
+  .notes-card ul{margin:0;padding-left:20px}
+  .notes-card li{font-size:.84rem;line-height:1.6;color:var(--trans-fg);margin-bottom:6px}
+  .notes-card li b{color:var(--accent)}
+
+  .modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);-webkit-backdrop-filter:blur(4px);
     backdrop-filter:blur(4px);z-index:1000;justify-content:center;align-items:flex-end;padding:0}
   .modal-overlay.active{display:flex}
   @media (min-width:620px){.modal-overlay{align-items:center;padding:20px}}
@@ -119,15 +164,16 @@
     padding-bottom:calc(18px + env(safe-area-inset-bottom,0px))}
   @media (min-width:620px){.modal-card{border-radius:14px}}
   .modal-card h3{margin:0 0 4px;font-size:1.05rem}
-  .modal-card .sub{margin:0 0 6px;font-size:.76rem;color:var(--text-dim);line-height:1.45}
+  .modal-card .sub{margin:0 0 6px;font-size:.76rem;color:var(--text-dim);line-height:1.5}
   .modal-card label{display:block;font-size:.78rem;color:var(--text-dim);margin:14px 0 4px;font-weight:600}
-  .modal-card input,.modal-card select{width:100%;background:var(--bg);border:1px solid var(--border);color:#fff;
-    padding:10px;border-radius:8px;font-size:16px}
+  .modal-card input,.modal-card select{width:100%;background:var(--field-bg);border:1px solid var(--border);
+    color:var(--text-main);padding:10px;border-radius:8px;font-size:16px}
   .inline-row{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:8px}
   .status{font-size:.76rem;color:var(--text-dim);line-height:1.45;word-break:break-word;flex:1 1 100%}
   .status.ok{color:var(--success)}.status.err{color:var(--danger)}.status.warn{color:var(--warn)}
-  .fine{margin-top:16px;font-size:.72rem;color:var(--text-dim);line-height:1.5;
+  .fine{margin-top:16px;font-size:.72rem;color:var(--text-dim);line-height:1.55;
     border-top:1px solid var(--border);padding-top:10px}
+  .fine code{color:var(--text-main)}
   footer{margin-top:22px;padding-top:12px;border-top:1px solid var(--border);
     font-size:.72rem;color:var(--text-dim);text-align:center;line-height:1.6}
 </style>
@@ -136,29 +182,42 @@
 
 <header>
   <div class="brand">
-    <h1>Pinyin &amp; English Reader Studio<span class="ver">v2.0</span></h1>
-    <p>Template vuoto · modello e chiave si impostano dal vivo · testi dall'area qui sotto</p>
+    <h1>Pinyin &amp; English Reader Studio<span class="ver">v3.0</span></h1>
+    <p id="brand-sub">Template vuoto · direzione: cinese ⇄ italiano · impostazioni salvate sul dispositivo</p>
   </div>
   <div class="header-actions">
+    <button class="btn btn-icon" id="btn-theme" type="button" title="Cambia tema chiaro/scuro">☾</button>
     <button class="btn" id="btn-settings" type="button">⚙︎ Imposta</button>
-    <button class="btn btn-danger" id="btn-reset" type="button" title="Svuota memoria, testo e documento">⟲ Reset</button>
+    <button class="btn btn-danger" id="btn-reset" type="button" title="Svuota solo i dati da elaborare">⟲ Reset</button>
   </div>
 </header>
 
-<textarea id="raw-text" placeholder="Incolla qui il testo (cinese o inglese) e tocca «Elabora AI»…" spellcheck="false"></textarea>
+<textarea id="raw-text" placeholder="Incolla qui il testo: cinese semplificato, italiano o inglese…" spellcheck="false"></textarea>
 
 <div class="controls-row">
   <div class="toolbar-group">
     <button class="btn" type="button" data-rate="0.5" onclick="setSpeed(0.5, this)">0.5x</button>
     <button class="btn active" type="button" data-rate="0.75" onclick="setSpeed(0.75, this)">0.75x</button>
     <button class="btn" type="button" data-rate="1" onclick="setSpeed(1, this)">1.0x</button>
-    <button id="pinyin-toggle" class="btn active" type="button" onclick="togglePinyinVisibility()">拼 ON</button>
+    <button id="pinyin-toggle" class="btn active" type="button" onclick="togglePinyinVisibility()" title="Mostra o nascondi il pinyin">拼 ON</button>
+    <button id="trans-toggle" class="btn active" type="button" onclick="toggleTranslationVisibility()" title="Mostra o nascondi la traduzione">it ON</button>
   </div>
   <div class="toolbar-group">
     <button id="global-play-btn" class="btn" type="button" onclick="handleGlobalSpeech()">▶ Tutto</button>
     <button id="global-stop-btn" class="btn" type="button" onclick="stopAllSpeech()" style="display:none">⏹</button>
     <button id="process-btn" class="btn-main" type="button" onclick="processText()">Elabora AI</button>
   </div>
+</div>
+
+<p class="hint-line" id="speed-hint">Velocità: 0.5x = lento (pause 320 ms fra i blocchi) · 0.75x = studio (150 ms) · 1.0x = normale. Le pause compensano la compressione del parametro di velocità operata da iOS.</p>
+
+<div class="legend">
+  <span class="lg-title">Toni:</span>
+  <span class="item"><i class="dot t1"></i>1° <span class="sign">ˉ</span></span>
+  <span class="item"><i class="dot t2"></i>2° <span class="sign">ˊ</span></span>
+  <span class="item"><i class="dot t3"></i>3° <span class="sign">ˇ</span></span>
+  <span class="item"><i class="dot t4"></i>4° <span class="sign">ˋ</span></span>
+  <span class="item"><i class="dot t5"></i>neutro <span class="sign">·</span></span>
 </div>
 
 <div id="telemetry-box" class="telemetry-bar"><span id="telemetry-summary">Pronto</span></div>
@@ -170,7 +229,7 @@
 <div id="key-modal" class="modal-overlay">
   <div class="modal-card">
     <h3>⚙︎ Impostazioni · OpenRouter</h3>
-    <p class="sub">I valori restano nel <b>localStorage di questo dispositivo</b>: la chiave non viene mai scritta nel file HTML pubblicato né inviata ad altri server.</p>
+    <p class="sub">Questi valori restano nel <b>localStorage di questo dispositivo</b>, non vengono mai scritti nel file HTML pubblicato e <b>non sono toccati dal tasto Reset</b>.</p>
 
     <label for="api-key-input">Chiave API</label>
     <input type="password" id="api-key-input" placeholder="sk-or-v1-…" autocomplete="off" autocapitalize="off" spellcheck="false">
@@ -186,6 +245,12 @@
       <option value="https://openrouter.ai/api/v1">Globale · openrouter.ai</option>
       <option value="https://eu.openrouter.ai/api/v1">Unione Europea · eu.openrouter.ai</option>
       <option value="https://us.openrouter.ai/api/v1">Stati Uniti · us.openrouter.ai</option>
+    </select>
+
+    <label for="target-select">Lingua di traduzione (testo sotto il cinese)</label>
+    <select id="target-select">
+      <option value="it">Italiano</option>
+      <option value="en">English</option>
     </select>
 
     <label for="model-preset">Modello preimpostato</label>
@@ -206,13 +271,13 @@
       <button class="btn-main" type="button" onclick="saveSettings()">Salva</button>
     </div>
 
-    <p class="fine">Suggerimento: gli alias <code>~provider/modello-latest</code> seguono automaticamente l'ultima release della famiglia. Il catalogo completo è letto in diretta da <code>/api/v1/models</code> solo quando lo richiedi.</p>
+    <p class="fine">Direzione di lavoro: <b>cinese → lingua di traduzione</b> quando il testo è cinese; <b>italiano/inglese → cinese semplificato</b> quando il testo è latino, con sotto il testo nella lingua di traduzione scelta. Gli alias <code>~autore/famiglia-latest</code> seguono sempre l'ultima release della famiglia.</p>
   </div>
 </div>
 
 <footer>
-  Pinyin &amp; English Reader Studio <b>v2.0</b> · template autonomo, funziona offline (l'elaborazione AI richiede connessione)<br>
-  La sintesi vocale usa le voci di sistema: per il cinese installa la voce in Impostazioni ▸ Accessibilità ▸ Contenuti pronunciati ▸ Voci ▸ Cinese.
+  Pinyin &amp; English Reader Studio <b>v3.0</b> · template autonomo, funziona offline (l'elaborazione AI richiede connessione)<br>
+  Sintesi vocale: per il cinese installa la voce in Impostazioni ▸ Accessibilità ▸ Contenuti pronunciati ▸ Voci ▸ Cinese.
 </footer>
 
 <script>
@@ -220,27 +285,38 @@
 'use strict';
 
 /* ============================== COSTANTI ============================== */
-var APP_VERSION = '2.0';
+var APP_VERSION = '3.0';
 var DEFAULT_MODEL = '~google/gemini-flash-latest';
+var DEFAULT_TARGET = 'it';
 
-/* Modelli consigliati — verificati su openrouter.ai (ottobre 2026).
-   Gli alias con "~" puntano sempre all'ultima release della famiglia. */
+/* Modelli consigliati (ID verificati su openrouter.ai, ottobre 2026).
+   Gli alias "~" puntano sempre all'ultima release della famiglia. */
 var PRESETS = [
   { id:'~google/gemini-flash-latest',      label:'Gemini Flash · always-latest (rapido ed economico)' },
   { id:'google/gemini-3.8-flash',          label:'Gemini 3.8 Flash · 02/09/2026' },
   { id:'~anthropic/claude-haiku-latest',   label:'Claude Haiku · always-latest (accurato)' },
   { id:'anthropic/claude-haiku-5.5',       label:'Claude Haiku 5.5 · 07/10/2026' },
   { id:'~deepseek/deepseek-flash-latest',  label:'DeepSeek Flash · always-latest (ottimo sul cinese)' },
-  { id:'~deepseek/deepseek-pro-latest',    label:'DeepSeek Pro · always-latest (massima qualità)' }
+  { id:'~deepseek/deepseek-pro-latest',    label:'DeepSeek Pro · always-latest (massima qualità)' },
+  { id:'openrouter/auto',                  label:'Auto · OpenRouter sceglie il modello' }
 ];
+
+/* Velocità: rate + pausa fra i blocchi (compensa la compressione di `rate` su iOS) + lunghezza blocco */
+var SPEEDS = {
+  '0.5': { rate:0.5,  gap:320, maxChunk:60  },
+  '0.75':{ rate:0.75, gap:150, maxChunk:110 },
+  '1':   { rate:1,    gap:0,   maxChunk:180 }
+};
 
 var LS = {
   key:'openrouter_api_key',
   model:'openrouter_model',
   endpoint:'openrouter_endpoint',
+  target:'openrouter_target',
+  theme:'pinyin_theme',
   input:'pinyin_cached_input',
   output:'pinyin_cached_output',
-  telemetry:'pinyin_cached_telemetry'   /* chiave storica v1.0: viene rimossa dal Reset */
+  telemetry:'pinyin_cached_telemetry'
 };
 
 /* ============================== STORAGE SICURO (iOS) ============================== */
@@ -249,16 +325,18 @@ function lsSet(k,v){ try{ localStorage.setItem(k,v); }catch(e){} }
 function lsDel(k){ try{ localStorage.removeItem(k); }catch(e){} }
 
 /* ============================== STATO ============================== */
-var currentPlaybackRate = 0.75;
+var currentSpeedKey = '0.75';
 var isPinyinVisible = true;
-var loadedData = [];
+var isTransVisible = true;
+var payload = { notes:[], paragraphs:[], direction:'' };
 var detectedLang = 'zh-CN';
 
 var globalIndex = 0;
 var isGlobalPlaying = false;
 var currentParagraphIndex = null;
-var speechGen = 0;               /* generazione della coda vocale: invalida i callback vecchi */
+var speechGen = 0;
 var voicesCache = [];
+var speechUnlocked = false;
 
 /* ============================== RIFERIMENTI DOM ============================== */
 function $(id){ return document.getElementById(id); }
@@ -269,9 +347,10 @@ var rawTextEl   = $('raw-text'),
     telemetrySummary = $('telemetry-summary'),
     gPlayBtn    = $('global-play-btn'),
     gStopBtn    = $('global-stop-btn'),
-    processBtn  = $('process-btn');
+    processBtn  = $('process-btn'),
+    brandSub    = $('brand-sub');
 
-/* ============================== UI: AVVISI ============================== */
+/* ============================== UTILITÀ UI ============================== */
 function showAlert(msg){
   if(!alertEl) return;
   alertEl.innerHTML = '<b>Errore:</b> ';
@@ -284,78 +363,106 @@ function setStatus(el, msg, kind){
   el.textContent = msg || '';
   el.className = 'status' + (kind ? ' ' + kind : '');
 }
+function cfgTarget(){ var t = lsGet(LS.target); return (t === 'en') ? 'en' : DEFAULT_TARGET; }
+function targetLabel(){ return cfgTarget(); }
+function targetName(){ return cfgTarget() === 'en' ? 'inglese' : 'italiano'; }
+function dirLabel(){
+  return cfgTarget() === 'en' ? 'cinese ⇄ inglese' : 'cinese ⇄ italiano';
+}
+function refreshBrandSub(){
+  if(brandSub) brandSub.textContent = 'Template vuoto · direzione: ' + dirLabel() + ' · impostazioni salvate sul dispositivo';
+}
+function refreshTransButton(){
+  var b = $('trans-toggle'); if(!b) return;
+  b.textContent = targetLabel() + (isTransVisible ? ' ON' : ' OFF');
+  b.classList.toggle('active', isTransVisible);
+}
 
 function renderEmptyState(){
   contentEl.innerHTML =
     '<div class="empty">' +
       '<h2>Template vuoto · v' + APP_VERSION + '</h2>' +
       '<ol>' +
-        '<li>Tocca <b>⚙︎ Imposta</b>, incolla la <b>chiave API OpenRouter</b> e scegli un <b>modello preimpostato</b>, poi <b>Salva</b>.</li>' +
-        '<li>Incolla il testo nell\'area in alto (cinese o inglese) e tocca <b>Elabora AI</b>.</li>' +
-        '<li>Ogni paragrafo diventa una scheda con pinyin colorato per tono, traduzione italiana e audio.</li>' +
-        '<li><b>⟲ Reset</b> svuota area di testo, documento e memoria del dispositivo.</li>' +
+        '<li>Tocca <b>⚙︎ Imposta</b>: chiave API, modello preimpostato e <b>lingua di traduzione</b> (ora: ' + targetName() + '), poi <b>Salva</b>.</li>' +
+        '<li>Incolla il testo nell\'area in alto: <b>cinese semplificato</b> → traduzione in ' + targetName() + '; <b>italiano/inglese</b> → cinese con pinyin.</li>' +
+        '<li>Tocca <b>Elabora AI</b>: ogni paragrafo diventa una scheda con pinyin colorato per tono, testo a fronte e audio.</li>' +
+        '<li>In coda compaiono le <b>note di lettura</b> con eccezioni e casi di sandhi. <b>⟲ Reset</b> svuota solo i dati da elaborare.</li>' +
       '</ol>' +
-      '<p style="margin:10px 0 0">Suggerimenti: <code>拼 ON/OFF</code> mostra o nasconde il pinyin, ' +
-      '<code>0.5x–1.0x</code> regola la velocità, <code>▶ Tutto</code> legge l\'intero testo in sequenza, ' +
+      '<p style="margin:10px 0 0">Comandi: <code>拼 ON/OFF</code> pinyin, <code>' + targetLabel() + ' ON/OFF</code> traduzione, ' +
+      '<code>0.5x–1.0x</code> velocità con pause compensate, <code>☾/☀</code> tema, <code>▶ Tutto</code> lettura in sequenza; ' +
       'toccando una parola la senti isolata.</p>' +
     '</div>';
 }
 
-/* ============================== RESET ============================== */
-function resetAll(askConfirm){
-  var msg = 'Reset completo?\n\nVengono cancellati:\n' +
-            '· il testo nell\'area di input e il documento elaborato\n' +
-            '· la memoria locale del dispositivo (chiave API, modello, endpoint)';
-  if(askConfirm !== false && !window.confirm(msg)) return;
-
+/* ============================== RESET (solo dati da elaborare) ============================== */
+function resetData(askConfirm){
+  if(askConfirm !== false){
+    var ok = window.confirm('Reset dei dati da elaborare?\n\nVengono cancellati: testo nell\'area di input, documento elaborato, note e telemetria.\n\nLe impostazioni (chiave API, modello, endpoint, lingua di traduzione) restano invariate.');
+    if(!ok) return;
+  }
   stopAllSpeech();
   lsDel(LS.input); lsDel(LS.output); lsDel(LS.telemetry);
-  lsDel(LS.key); lsDel(LS.model); lsDel(LS.endpoint);
-
   if(rawTextEl) rawTextEl.value = '';
-  loadedData = [];
+  payload = { notes:[], paragraphs:[], direction:'' };
   detectedLang = 'zh-CN';
   renderEmptyState();
-
   if(telemetryEl){ telemetryEl.classList.remove('active'); telemetrySummary.textContent = 'Pronto'; }
   clearAlert();
-
-  /* ripristino dei controlli ai valori di fabbrica */
-  currentPlaybackRate = 0.75;
-  Array.prototype.forEach.call(document.querySelectorAll('[data-rate]'), function(b){
-    b.classList.toggle('active', b.getAttribute('data-rate') === '0.75');
-  });
-  isPinyinVisible = true;
-  document.body.classList.remove('hide-pinyin');
-  var pt = $('pinyin-toggle');
-  if(pt){ pt.innerText = '拼 ON'; pt.classList.add('active'); }
-
-  /* campi della finestra impostazioni */
-  if($('api-key-input')) $('api-key-input').value = '';
-  if($('custom-model-input')) $('custom-model-input').value = '';
-  if($('endpoint-select')) $('endpoint-select').value = 'https://openrouter.ai/api/v1';
-  setStatus($('key-status'), 'memoria locale svuotata', 'warn');
+  /* nessuna modifica a chiave, modello, endpoint, lingua di traduzione, tema o velocità */
 }
 
-/* ============================== VISIBILITÀ PINYIN ============================== */
+/* ============================== TOGGLE DI VISUALIZZAZIONE ============================== */
 function togglePinyinVisibility(){
   isPinyinVisible = !isPinyinVisible;
   var btn = $('pinyin-toggle');
   if(isPinyinVisible){
     document.body.classList.remove('hide-pinyin');
-    btn.innerText = '拼 ON'; btn.classList.add('active');
+    btn.textContent = '拼 ON'; btn.classList.add('active');
   } else {
     document.body.classList.add('hide-pinyin');
-    btn.innerText = '拼 OFF'; btn.classList.remove('active');
+    btn.textContent = '拼 OFF'; btn.classList.remove('active');
   }
+}
+function toggleTranslationVisibility(){
+  isTransVisible = !isTransVisible;
+  document.body.classList.toggle('hide-trans', !isTransVisible);
+  refreshTransButton();
+}
+
+/* ============================== TEMA ============================== */
+function sysDark(){
+  return !!(window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
+}
+function effectiveTheme(){
+  var t = lsGet(LS.theme);
+  if(t === 'light' || t === 'dark') return t;
+  return sysDark() ? 'dark' : 'light';
+}
+function paintThemeButton(){
+  var b = $('btn-theme'); if(!b) return;
+  b.textContent = (effectiveTheme() === 'dark') ? '☀' : '☾';
+  b.title = (effectiveTheme() === 'dark') ? 'Passa al tema chiaro' : 'Passa al tema scuro';
+}
+function toggleTheme(){
+  var next = (effectiveTheme() === 'dark') ? 'light' : 'dark';
+  document.documentElement.setAttribute('data-theme', next);
+  lsSet(LS.theme, next);
+  paintThemeButton();
 }
 
 /* ============================== VELOCITÀ ============================== */
 function setSpeed(rate, el){
-  currentPlaybackRate = rate;
+  var key = String(rate);
+  if(!SPEEDS[key]) key = '0.75';
+  currentSpeedKey = key;
   Array.prototype.forEach.call(document.querySelectorAll('[data-rate]'), function(b){ b.classList.remove('active'); });
   if(el) el.classList.add('active');
+  else Array.prototype.forEach.call(document.querySelectorAll('[data-rate]'), function(b){
+    b.classList.toggle('active', b.getAttribute('data-rate') === key);
+  });
 }
+function speedCfg(){ return SPEEDS[currentSpeedKey] || SPEEDS['0.75']; }
+function currentRate(){ return speedCfg().rate; }
 
 /* ============================== TONI PINYIN ============================== */
 function getToneClass(pinyin){
@@ -368,26 +475,40 @@ function getToneClass(pinyin){
 }
 
 /* ============================== SINTESI VOCALE ============================== */
-function loadVoices(){ try{ voicesCache = window.speechSynthesis ? (window.speechSynthesis.getVoices() || []) : []; }catch(e){ voicesCache = []; } }
+function loadVoices(){
+  try{ voicesCache = window.speechSynthesis ? (window.speechSynthesis.getVoices() || []) : []; }
+  catch(e){ voicesCache = []; }
+}
 function pickVoice(lang){
   if(!voicesCache.length) loadVoices();
-  var want = String(lang || '').toLowerCase();
+  var want = String(lang || '').toLowerCase().replace('_','-');
   var prefix = want.slice(0,2) || 'zh';
-  var hits = voicesCache.filter(function(v){ return (v.lang || '').toLowerCase().indexOf(prefix) === 0; });
+  var hits = voicesCache.filter(function(v){ return (v.lang || '').toLowerCase().replace('_','-').indexOf(prefix) === 0; });
   for(var i=0;i<hits.length;i++){
     if((hits[i].lang || '').toLowerCase().replace('_','-').indexOf(want) === 0) return hits[i];
   }
   return hits[0] || null;
 }
 
-/* iOS tronca le utterance lunghe: si legge a blocchi brevi, tagliando sulla punteggiatura. */
-function splitForSpeech(text){
+/* WebKit scarta i speak() che non nascono da un gesto: al primo tocco si sblocca il motore. */
+function unlockSpeech(){
+  if(speechUnlocked || !window.speechSynthesis) return;
+  try{
+    var u = new SpeechSynthesisUtterance(' ');
+    u.volume = 0; u.rate = 1; u.lang = 'zh-CN';
+    window.speechSynthesis.speak(u);
+  }catch(e){}
+  speechUnlocked = true;
+}
+
+/* Divide il testo in blocchi brevi: iOS tronca le utterance lunghe. */
+function splitForSpeech(text, maxChunk){
   var clean = String(text || '').replace(/\s+/g, ' ').trim();
   if(!clean) return [];
   var parts = clean.match(/[^。！？；，、,.!?;:]+[。！？；，、,.!?;:]?/g) || [clean];
   var out = [], buf = '';
   parts.forEach(function(p){
-    if((buf + p).length > 150 && buf){ out.push(buf.trim()); buf = p; }
+    if((buf + p).length > maxChunk && buf){ out.push(buf.trim()); buf = p; }
     else { buf += p; }
   });
   if(buf.trim()) out.push(buf.trim());
@@ -399,12 +520,15 @@ function cancelSpeech(){
   try{ window.speechSynthesis.cancel(); }catch(e){}
 }
 
-/* Legge un testo a blocchi; done() viene chiamato solo se la coda non è stata invalidata. */
+/* Legge il testo a blocchi, con pausa fra un blocco e l'altro in base alla velocità scelta. */
 function speakText(text, lang, done){
   if(!('speechSynthesis' in window)){ if(done) done(); return; }
+  var cfg = speedCfg();
+  var wasBusy = false;
+  try{ wasBusy = !!(window.speechSynthesis.speaking || window.speechSynthesis.pending); }catch(e){}
   cancelSpeech();
   var myGen = speechGen;
-  var chunks = splitForSpeech(text);
+  var chunks = splitForSpeech(text, cfg.maxChunk);
   if(!chunks.length){ if(done) done(); return; }
   var i = 0;
 
@@ -413,82 +537,81 @@ function speakText(text, lang, done){
     if(i >= chunks.length){ if(done) done(); return; }
     var u = new SpeechSynthesisUtterance(chunks[i++]);
     u.lang = lang || detectedLang || 'zh-CN';
-    u.rate = currentPlaybackRate;
+    u.rate = cfg.rate;
     u.pitch = 1;
     var v = pickVoice(u.lang);
     if(v) u.voice = v;
-    u.onend = next;
+    u.onend = function(){
+      if(myGen !== speechGen) return;
+      if(cfg.gap > 0) setTimeout(next, cfg.gap);
+      else next();
+    };
     u.onerror = function(){ if(myGen === speechGen) next(); };
     try{ window.speechSynthesis.speak(u); }catch(e){ if(done) done(); }
   }
-  /* su WebKit dopo cancel() serve un attimo prima di poter accodare */
-  setTimeout(next, 60);
+
+  /* se qualcosa stava suonando, lascia respirare WebKit dopo cancel(); altrimenti parti subito,
+     così la prima utterance resta dentro il gesto utente (requisito di iOS). */
+  if(wasBusy) setTimeout(next, 90); else next();
 }
 
-function speakWord(text, lang){
-  var myGenSnapshot = speechGen;
-  speakText(text, lang, null);
-  /* se nel frattempo parte una lettura globale, questa resta valida: nessuna azione extra */
-  void myGenSnapshot;
-}
+function speakWord(text, lang){ speakText(text, lang, null); }
 
-/* ---- lettura per singolo paragrafo ---- */
+/* ---- lettura del singolo paragrafo ---- */
 function toggleParagraphSpeech(index){
   var btn = $('play-btn-' + index);
   if(window.speechSynthesis && window.speechSynthesis.speaking && currentParagraphIndex === index){
     if(window.speechSynthesis.paused){
       window.speechSynthesis.resume();
-      if(btn) btn.innerText = '⏸ Pausa';
+      if(btn) btn.textContent = '⏸ Pausa';
     } else {
       window.speechSynthesis.pause();
-      if(btn) btn.innerText = '▶ Riprendi';
+      if(btn) btn.textContent = '▶ Riprendi';
     }
     return;
   }
   stopAllSpeech();
   currentParagraphIndex = index;
-  if(btn) btn.innerText = '⏸ Pausa';
-  var item = loadedData[index];
+  if(btn) btn.textContent = '⏸ Pausa';
+  var item = payload.paragraphs[index];
   if(!item) return;
-  var text = item.s || (item.words || []).map(function(w){ return w.h || ''; }).join('');
-  speakText(text, item.lang || detectedLang, function(){
-    if(btn) btn.innerText = '▶ Ascolta';
+  speakText(item.zh, 'zh-CN', function(){
+    if(btn) btn.textContent = '▶ Ascolta';
     currentParagraphIndex = null;
   });
 }
 
 /* ---- lettura globale ---- */
 function handleGlobalSpeech(){
-  if(!loadedData.length) return;
+  if(!payload.paragraphs.length) return;
   if(window.speechSynthesis && window.speechSynthesis.speaking && isGlobalPlaying){
     if(window.speechSynthesis.paused){
       window.speechSynthesis.resume();
-      gPlayBtn.innerText = '⏸ Pausa';
+      gPlayBtn.textContent = '⏸ Pausa';
     } else {
       window.speechSynthesis.pause();
-      gPlayBtn.innerText = '▶ Riprendi';
+      gPlayBtn.textContent = '▶ Riprendi';
     }
     return;
   }
   stopAllSpeech();
   isGlobalPlaying = true;
   globalIndex = 0;
-  gPlayBtn.innerText = '⏸ Pausa';
+  gPlayBtn.textContent = '⏸ Pausa';
   gStopBtn.style.display = 'inline-block';
   playNextInSequence();
 }
 
 function playNextInSequence(){
-  if(!isGlobalPlaying || globalIndex >= loadedData.length){ stopAllSpeech(); return; }
+  if(!isGlobalPlaying || globalIndex >= payload.paragraphs.length){ stopAllSpeech(); return; }
   Array.prototype.forEach.call(document.querySelectorAll('.card'), function(c){ c.classList.remove('speaking-card'); });
   var card = $('card-' + globalIndex);
   if(card){
     card.classList.add('speaking-card');
     try{ card.scrollIntoView({ behavior:'smooth', block:'nearest' }); }catch(e){}
   }
-  var item = loadedData[globalIndex];
-  var text = item.s || (item.words || []).map(function(w){ return w.h || ''; }).join('');
-  speakText(text, item.lang || detectedLang, function(){
+  var item = payload.paragraphs[globalIndex];
+  speakText(item.zh, 'zh-CN', function(){
     globalIndex++;
     playNextInSequence();
   });
@@ -498,43 +621,61 @@ function stopAllSpeech(){
   cancelSpeech();
   isGlobalPlaying = false;
   currentParagraphIndex = null;
-  if(gPlayBtn) gPlayBtn.innerText = '▶ Tutto';
+  if(gPlayBtn) gPlayBtn.textContent = '▶ Tutto';
   if(gStopBtn) gStopBtn.style.display = 'none';
   Array.prototype.forEach.call(document.querySelectorAll('.card'), function(c){ c.classList.remove('speaking-card'); });
-  Array.prototype.forEach.call(document.querySelectorAll('[id^="play-btn-"]'), function(b){ b.innerText = '▶ Ascolta'; });
+  Array.prototype.forEach.call(document.querySelectorAll('[id^="play-btn-"]'), function(b){ b.textContent = '▶ Ascolta'; });
 }
 
-/* ============================== ELABORAZIONE AI ============================== */
-function buildPrompt(text){
-  return 'Analizza il testo in fondo preservando la suddivisione in FRASI/PARAGRAFI INTERI.\n' +
-  'Il testo può essere in CINESE o in INGLESE.\n\n' +
-  'Regole di output:\n' +
-  '1. Identifica la lingua e usa "lang": "zh-CN" per il cinese, "en-US" per l\'inglese.\n' +
-  '2. Rispondi ESCLUSIVAMENTE con un array JSON, senza commenti e senza recinti di codice.\n' +
-  '3. Struttura esatta:\n' +
-  '[\n' +
-  '  {\n' +
-  '    "s": "Frase originale completa",\n' +
-  '    "m": "Traduzione integrale in italiano",\n' +
-  '    "lang": "zh-CN",\n' +
-  '    "words": [\n' +
-  '      { "h": "parola o carattere originale", "p": "pīn yīn con accenti tonali" }\n' +
-  '    ]\n' +
-  '  }\n' +
-  ']\n' +
-  '4. Per il cinese: ogni elemento di "words" è una parola o un singolo carattere; in "p" ci deve essere ' +
-  'esattamente una sillaba per ogni carattere Han di "h", separate da uno spazio (es. h:"你好", p:"nǐ hǎo"). ' +
-  'Pinyin contestuale corretto, tono lessicale, tono neutro senza accento.\n' +
-  '5. La punteggiatura è un elemento di "words" con "p": "" (es. { "h": "，", "p": "" }).\n' +
-  '6. Per l\'inglese: "p" sempre stringa vuota "" e ogni elemento di "words" è una parola o un segno.\n' +
-  '7. La concatenazione di tutti i "h" deve ricostruire esattamente la frase "s".\n\n' +
-  'Testo da elaborare:\n' + text;
+/* ============================== PROMPT ============================== */
+function buildPrompt(text, target){
+  var tName = (target === 'en') ? 'inglese' : 'italiano';
+  return 'Analizza il testo in fondo e restituisci ESCLUSIVAMENTE un oggetto JSON, senza commenti, senza spiegazioni e senza recinti di codice.\n\n' +
+  'Rileva la lingua del testo: cinese semplificato, italiano o inglese.\n\n' +
+  'REGOLE\n' +
+  '1. Se il testo è in CINESE semplificato: mantieni la suddivisione in frasi o paragrafi interi; "zh" è la frase cinese originale; "m" è la sua traduzione fedele in ' + tName + '.\n' +
+  '2. Se il testo è in ITALIANO o INGLESE: traduci in cinese semplificato; "zh" è la frase cinese tradotta; "m" è il testo in ' + tName + ' (l\'originale se è già in ' + tName + ', altrimenti la sua traduzione).\n' +
+  '3. "words" contiene i token della frase cinese "zh": ogni token è una parola o un singolo carattere Han, con "p" = pinyin contestuale con accenti tonali. In "p" ci deve essere esattamente una sillaba per ogni carattere Han di "h", separate da uno spazio (esempio: {"h":"你好","p":"nǐ hǎo"}).\n' +
+  '4. La punteggiatura è un token con "p": "" (esempio: {"h":"，","p":""}).\n' +
+  '5. La concatenazione di tutti i "h" deve ricostruire esattamente "zh".\n' +
+  '6. "notes": da 3 a 6 stringhe brevi sulla corretta lettura del cinese prodotto: toni, caratteri polifonici, tono neutro, nomi propri e in particolare le ECCEZIONI e i casi di SANDHI (3°+3° → 2°+3°, 一, 不, 不 davanti a 4° tono). Nessun commento sul contenuto o sul significato politico del testo.\n' +
+  '7. "target": "' + target + '"; "direction": "zh2' + target + '" oppure "' + target + '2zh".\n\n' +
+  'STRUTTURA\n' +
+  '{\n' +
+  '  "direction": "zh2' + target + '",\n' +
+  '  "target": "' + target + '",\n' +
+  '  "notes": ["..."],\n' +
+  '  "paragraphs": [\n' +
+  '    { "zh": "frase cinese", "m": "testo in ' + tName + '", "words": [ {"h":"你","p":"nǐ"}, {"h":"好","p":"hǎo"} ] }\n' +
+  '  ]\n' +
+  '}\n\n' +
+  'TESTO DA ELABORARE\n' + text;
 }
 
 function endpointBase(){
   return (lsGet(LS.endpoint) || 'https://openrouter.ai/api/v1').replace(/\/+$/, '');
 }
 
+/* ============================== NORMALIZZAZIONE RISPOSTA ============================== */
+function normalizePayload(data){
+  var out = { notes:[], paragraphs:[], direction:'' };
+  function mapP(it){
+    return { zh: it.zh || it.s || '', m: it.m || '', words: it.words || [] };
+  }
+  if(Array.isArray(data)){                       /* formato v1.0/v2.0: array di frasi */
+    out.paragraphs = data.map(mapP);
+    return out;
+  }
+  if(data && typeof data === 'object'){
+    out.notes = Array.isArray(data.notes) ? data.notes.filter(function(n){ return n && String(n).trim(); }) : [];
+    out.direction = data.direction || '';
+    var ps = data.paragraphs || data.data || [];
+    out.paragraphs = (Array.isArray(ps) ? ps : []).map(mapP);
+  }
+  return out;
+}
+
+/* ============================== ELABORAZIONE AI ============================== */
 function processText(){
   var text = (rawTextEl.value || '').trim();
   if(!text){ showAlert('Inserisci prima un testo da elaborare.'); rawTextEl.focus(); return; }
@@ -546,9 +687,10 @@ function processText(){
   stopAllSpeech();
   lsSet(LS.input, text);
 
+  var target = cfgTarget();
   var model = lsGet(LS.model) || DEFAULT_MODEL;
   processBtn.disabled = true;
-  processBtn.innerText = 'Attendi…';
+  processBtn.textContent = 'Attendi…';
 
   var startTime = (window.performance && performance.now) ? performance.now() : Date.now();
   var base = endpointBase();
@@ -563,7 +705,7 @@ function processText(){
     },
     body: JSON.stringify({
       model: model,
-      messages:[{ role:'user', content: buildPrompt(text) }],
+      messages:[{ role:'user', content: buildPrompt(text, target) }],
       temperature: 0.1
     })
   }).then(function(response){
@@ -582,22 +724,32 @@ function processText(){
       if(typeof content !== 'string' || !content.trim()) throw new Error('Il modello non ha restituito contenuto.');
 
       var raw = content.trim();
+      var a = raw.indexOf('{'), b = raw.lastIndexOf('}');
       var s = raw.indexOf('['), e = raw.lastIndexOf(']');
-      if(s === -1 || e === -1 || e < s) throw new Error('Formato JSON non riconosciuto nella risposta.');
-      var parsed;
-      try{ parsed = JSON.parse(raw.substring(s, e + 1)); }
-      catch(err){ throw new Error('JSON non valido: ' + err.message); }
-      if(!Array.isArray(parsed) || !parsed.length) throw new Error('Array JSON vuoto.');
+      var slice = null;
+      if(a !== -1 && b > a) slice = raw.substring(a, b + 1);
+      else if(s !== -1 && e > s) slice = raw.substring(s, e + 1);
+      if(!slice) throw new Error('Formato JSON non riconosciuto nella risposta.');
 
-      loadedData = parsed;
-      lsSet(LS.output, JSON.stringify(loadedData));
-      renderCards(loadedData);
+      var parsed;
+      try{ parsed = JSON.parse(slice); }
+      catch(err){ throw new Error('JSON non valido: ' + err.message); }
+
+      payload = normalizePayload(parsed);
+      if(!payload.paragraphs.length) throw new Error('Nessun paragrafo nella risposta.');
+
+      lsSet(LS.output, JSON.stringify(payload));
+      renderAll(payload);
 
       telemetryEl.classList.add('active');
       var tokens = '';
-      if(data.usage) tokens = ' | Token: <span class="badge">' + ((data.usage.prompt_tokens||0) + '+' + (data.usage.completion_tokens||0)) + '</span>';
-      telemetrySummary.innerHTML = 'Modello: <span class="badge">' + model + '</span> | Tempo: <span class="badge">' +
-        (duration/1000).toFixed(2) + 's</span>' + tokens + ' | Paragrafi: <span class="badge">' + loadedData.length + '</span>';
+      if(data.usage){
+        tokens = ' | Token: <span class="badge">' + ((data.usage.prompt_tokens||0) + '+' + (data.usage.completion_tokens||0)) + '</span>';
+      }
+      telemetrySummary.innerHTML = 'Modello: <span class="badge">' + model + '</span>' +
+        ' | Lingua: <span class="badge">' + target + '</span>' +
+        ' | Tempo: <span class="badge">' + (duration/1000).toFixed(2) + 's</span>' + tokens +
+        ' | Paragrafi: <span class="badge">' + payload.paragraphs.length + '</span>';
     });
   }).catch(function(err){
     var m = err && err.message ? err.message : 'errore sconosciuto';
@@ -607,30 +759,33 @@ function processText(){
     telemetrySummary.textContent = 'Ultima elaborazione non riuscita';
   }).then(function(){
     processBtn.disabled = false;
-    processBtn.innerText = 'Elabora AI';
+    processBtn.textContent = 'Elabora AI';
   });
 }
 
-/* ============================== RENDERING SCHEDE ============================== */
-function renderCards(data){
-  contentEl.innerHTML = '';
-  if(!Array.isArray(data) || !data.length){ renderEmptyState(); return; }
+/* ============================== RENDERING ============================== */
+function renderAll(data){
+  renderCards(data.paragraphs);
+  renderNotes(data.notes);
+}
 
-  data.forEach(function(item, idx){
+function renderCards(paragraphs){
+  contentEl.innerHTML = '';
+  if(!Array.isArray(paragraphs) || !paragraphs.length){ renderEmptyState(); return; }
+
+  paragraphs.forEach(function(item, idx){
     var card = document.createElement('div');
     card.className = 'card';
     card.id = 'card-' + idx;
 
     var sentenceDiv = document.createElement('div');
     sentenceDiv.className = 'sentence-container';
-    detectedLang = item.lang || (/[\u3400-\u9fff]/.test(item.s || '') ? 'zh-CN' : 'en-US');
+    detectedLang = 'zh-CN';
 
-    var words = item.words || [];
-    words.forEach(function(token){
+    (item.words || []).forEach(function(token){
       var textToken = token.h || '';
       var pinyin = (token.p || '').trim();
 
-      /* Punteggiatura e spazi */
       if(!pinyin && /^[，。！？、“”‘’《》；：…,.!?;:—\-"'()\[\] ]+$/.test(textToken)){
         var punct = document.createElement('span');
         punct.className = 'punctuation';
@@ -638,23 +793,19 @@ function renderCards(data){
         sentenceDiv.appendChild(punct);
         return;
       }
-
-      /* Ramo inglese / token senza pinyin */
-      if(detectedLang === 'en-US' || !pinyin){
-        var engSpan = document.createElement('span');
-        engSpan.className = 'english-word';
-        engSpan.textContent = textToken;
-        engSpan.addEventListener('click', function(){ speakWord(textToken, 'en-US'); });
-        sentenceDiv.appendChild(engSpan);
+      if(!pinyin){
+        var plain = document.createElement('span');
+        plain.className = 'punctuation';
+        plain.textContent = textToken;
+        sentenceDiv.appendChild(plain);
         return;
       }
 
-      /* Ramo cinese: un <ruby> per carattere quando le sillabe combaciano */
       var wordSpan = document.createElement('span');
       wordSpan.className = 'word-token';
       wordSpan.addEventListener('click', function(){ speakWord(textToken, 'zh-CN'); });
 
-      var syllables = pinyin.split(/\s+/).filter(function(s){ return s.length; });
+      var syllables = pinyin.split(/\s+/).filter(function(x){ return x.length; });
       var chars = Array.from(textToken);
 
       if(syllables.length === chars.length){
@@ -690,12 +841,12 @@ function renderCards(data){
     playBtn.className = 'btn';
     playBtn.type = 'button';
     playBtn.id = 'play-btn-' + idx;
-    playBtn.innerHTML = '▶ Ascolta';
+    playBtn.textContent = '▶ Ascolta';
     playBtn.addEventListener('click', function(){ toggleParagraphSpeech(idx); });
 
     var meta = document.createElement('span');
     meta.className = 'meta';
-    meta.textContent = 'Paragrafo ' + (idx + 1) + ' di ' + data.length;
+    meta.textContent = 'Paragrafo ' + (idx + 1) + ' di ' + paragraphs.length;
 
     footer.appendChild(playBtn);
     footer.appendChild(meta);
@@ -706,7 +857,46 @@ function renderCards(data){
   });
 }
 
+function renderNotes(notes){
+  var old = document.querySelector('.notes-card');
+  if(old) old.parentNode.removeChild(old);
+  if(!notes || !notes.length) return;
+
+  var box = document.createElement('section');
+  box.className = 'notes-card';
+  var h = document.createElement('h2');
+  h.textContent = 'Note di lettura · toni, eccezioni e sandhi';
+  box.appendChild(h);
+
+  var ul = document.createElement('ul');
+  notes.forEach(function(n){
+    var li = document.createElement('li');
+    var text = String(n);
+    /* evidenzia i termini tecnici fra **…** senza usare innerHTML sui dati grezzi */
+    var parts = text.split(/\*\*/);
+    parts.forEach(function(p, i){
+      if(!p) return;
+      if(i % 2 === 1){
+        var b = document.createElement('b');
+        b.textContent = p;
+        li.appendChild(b);
+      } else {
+        li.appendChild(document.createTextNode(p));
+      }
+    });
+    ul.appendChild(li);
+  });
+  box.appendChild(ul);
+  contentEl.appendChild(box);
+}
+
 /* ============================== IMPOSTAZIONI: MODELLI ============================== */
+function modelOption(value, label){
+  var o = document.createElement('option');
+  o.value = value;
+  o.textContent = label;
+  return o;
+}
 function fillPresetSelect(){
   var sel = $('model-preset');
   sel.innerHTML = '';
@@ -717,8 +907,7 @@ function fillPresetSelect(){
   sel.appendChild(og);
 
   var current = lsGet(LS.model) || DEFAULT_MODEL;
-  var exists = PRESETS.some(function(m){ return m.id === current; });
-  if(exists){
+  if(PRESETS.some(function(m){ return m.id === current; })){
     sel.value = current;
     handleModelPresetChange(current);
   } else if(current){
@@ -738,17 +927,10 @@ function fillPresetSelect(){
   og3.appendChild(modelOption('custom', 'Altro modello personalizzato…'));
   sel.appendChild(og3);
 }
-function modelOption(value, label){
-  var o = document.createElement('option');
-  o.value = value;
-  o.textContent = label;
-  return o;
-}
 function handleModelPresetChange(val){
   var w = $('custom-model-wrapper');
   if(w) w.style.display = (val === 'custom') ? 'block' : 'none';
 }
-
 function loadCatalog(){
   var st = $('catalog-status');
   setStatus(st, 'lettura catalogo da ' + endpointBase() + '…');
@@ -777,10 +959,6 @@ function loadCatalog(){
         sel.appendChild(og);
         used += items.length;
       });
-      /* l'opzione "custom" resta sempre in fondo */
-      var customOpt = Array.prototype.filter.call(sel.options, function(o){ return o.value === 'custom'; })[0];
-      if(customOpt && customOpt.parentNode) sel.appendChild(customOpt.parentNode);
-
       sel.value = current;
       setStatus(st, '✓ catalogo live: ' + list.length + ' modelli, ' + used + ' mostrati per famiglia.', 'ok');
     })
@@ -793,10 +971,10 @@ function loadCatalog(){
 function openKeyModal(){
   $('api-key-input').value = lsGet(LS.key) || '';
   $('endpoint-select').value = lsGet(LS.endpoint) || 'https://openrouter.ai/api/v1';
+  $('target-select').value = cfgTarget();
   fillPresetSelect();
   var m = $('model-preset').value;
   if(m === 'custom' || !PRESETS.some(function(p){ return p.id === m; })){
-    /* modello salvato non presente nei preset: mostralo nel campo manuale */
     if(m && m !== 'custom') $('custom-model-input').value = m;
   }
   setStatus($('key-status'), '');
@@ -809,12 +987,17 @@ function saveSettings(){
   var key = ($('api-key-input').value || '').trim();
   if(key) lsSet(LS.key, key); else lsDel(LS.key);
   lsSet(LS.endpoint, $('endpoint-select').value || 'https://openrouter.ai/api/v1');
+  lsSet(LS.target, ($('target-select').value === 'en') ? 'en' : 'it');
 
   var preset = $('model-preset').value;
   var finalModel = (preset === 'custom')
     ? (($('custom-model-input').value || '').trim() || DEFAULT_MODEL)
     : preset;
   lsSet(LS.model, finalModel);
+
+  refreshBrandSub();
+  refreshTransButton();
+  if(!payload.paragraphs.length) renderEmptyState();
   closeKeyModal();
 }
 
@@ -846,8 +1029,18 @@ function init(){
     window.speechSynthesis.onvoiceschanged = loadVoices;
   }
 
+  /* tema */
+  var savedTheme = lsGet(LS.theme);
+  if(savedTheme === 'light' || savedTheme === 'dark') document.documentElement.setAttribute('data-theme', savedTheme);
+  paintThemeButton();
+
+  /* lingua di traduzione nel sottotitolo e nel tasto */
+  refreshBrandSub();
+  refreshTransButton();
+
+  $('btn-theme').addEventListener('click', toggleTheme);
   $('btn-settings').addEventListener('click', openKeyModal);
-  $('btn-reset').addEventListener('click', function(){ resetAll(true); });
+  $('btn-reset').addEventListener('click', function(){ resetData(true); });
   $('btn-toggle-key').addEventListener('click', function(){
     var i = $('api-key-input');
     var show = i.type === 'password';
@@ -861,38 +1054,43 @@ function init(){
   });
   $('btn-test-key').addEventListener('click', testKey);
   $('btn-load-catalog').addEventListener('click', loadCatalog);
-
-  /* chiusura toccando lo sfondo */
   $('key-modal').addEventListener('click', function(ev){ if(ev.target === this) closeKeyModal(); });
 
-  /* ripristino sessione (se non è stato fatto Reset) */
+  /* sblocco del motore vocale al primo tocco (iOS) */
+  document.addEventListener('pointerdown', unlockSpeech, { once:true });
+  document.addEventListener('touchstart', unlockSpeech, { once:true });
+
+  /* ripristino sessione */
   var savedInput = lsGet(LS.input);
   if(savedInput) rawTextEl.value = savedInput;
 
   var savedOutput = lsGet(LS.output);
   if(savedOutput){
     try{
-      loadedData = JSON.parse(savedOutput);
-      if(Array.isArray(loadedData) && loadedData.length) renderCards(loadedData);
+      payload = normalizePayload(JSON.parse(savedOutput));
+      if(payload.paragraphs.length) renderAll(payload);
       else renderEmptyState();
     }catch(e){ renderEmptyState(); }
   } else {
     renderEmptyState();
   }
 
-  /* risparmio: l'input viene memorizzato quando si elabora; qui si aggiorna a ogni modifica */
   rawTextEl.addEventListener('change', function(){ lsSet(LS.input, rawTextEl.value); });
 
   /* prima apertura: se manca la chiave, apri subito Configura */
-  if(!lsGet(LS.key)){ openKeyModal(); setStatus($('key-status'), 'prima configurazione: incolla la chiave e scegli un modello', 'warn'); }
+  if(!lsGet(LS.key)){
+    openKeyModal();
+    setStatus($('key-status'), 'prima configurazione: incolla la chiave, scegli modello e lingua, poi Salva', 'warn');
+  }
 }
 
 if(document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
 else init();
 
-/* ============================== API PUBBLICA (per tasti inline) ============================== */
+/* ============================== API PUBBLICA (tasti inline) ============================== */
 window.setSpeed = setSpeed;
 window.togglePinyinVisibility = togglePinyinVisibility;
+window.toggleTranslationVisibility = toggleTranslationVisibility;
 window.handleGlobalSpeech = handleGlobalSpeech;
 window.stopAllSpeech = stopAllSpeech;
 window.processText = processText;
