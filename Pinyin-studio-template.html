@@ -4,12 +4,12 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="color-scheme" content="light dark">
-<meta name="application-name" content="Pinyin &amp; English Reader Studio v3.0">
-<title>Pinyin &amp; English Reader Studio v3.0</title>
+<meta name="application-name" content="Pinyin &amp; English Reader Studio v3.1">
+<title>Pinyin &amp; English Reader Studio v3.1</title>
 <!--
 ==========================================================================================
   PINYIN & ENGLISH READER STUDIO — TEMPLATE VUOTO
-  Versione interna: 3.0  ·  data: 2026-10-13  ·  file singolo, autonomo, offline-first
+  Versione interna: 3.1  ·  data: 2026-10-21  ·  file singolo, autonomo, offline-first
 ------------------------------------------------------------------------------------------
   MODIFICHE RISPETTO ALLA v2.0 (richieste da Pietro)
   [1] RESET conservativo: svuota SOLO i dati da elaborare (area di testo, documento, telemetria,
@@ -182,8 +182,8 @@
 
 <header>
   <div class="brand">
-    <h1>Pinyin &amp; English Reader Studio<span class="ver">v3.0</span></h1>
-    <p id="brand-sub">Template vuoto · direzione: cinese ⇄ italiano · impostazioni salvate sul dispositivo</p>
+    <h1>Pinyin &amp; English Reader Studio<span class="ver">v3.1</span></h1>
+    <p id="brand-sub">Template vuoto · direzione: cinese ⇄ italiano</p>
   </div>
   <div class="header-actions">
     <button class="btn btn-icon" id="btn-theme" type="button" title="Cambia tema chiaro/scuro">☾</button>
@@ -209,7 +209,7 @@
   </div>
 </div>
 
-<p class="hint-line" id="speed-hint">Velocità: 0.5x = lento (pause 320 ms fra i blocchi) · 0.75x = studio (150 ms) · 1.0x = normale. Le pause compensano la compressione del parametro di velocità operata da iOS.</p>
+<p class="hint-line" id="speed-hint">Velocità: 0.5x = lento (pause 320 ms fra i blocchi) · 0.75x = studio (150 ms) · 1.0x = normale. Le pause compensano la compressione di iOS.</p>
 
 <div class="legend">
   <span class="lg-title">Toni:</span>
@@ -276,7 +276,7 @@
 </div>
 
 <footer>
-  Pinyin &amp; English Reader Studio <b>v3.0</b> · template autonomo, funziona offline (l'elaborazione AI richiede connessione)<br>
+  Pinyin &amp; English Reader Studio <b>v3.1</b> · template autonomo, funziona offline (l'elaborazione AI richiede connessione)<br>
   Sintesi vocale: per il cinese installa la voce in Impostazioni ▸ Accessibilità ▸ Contenuti pronunciati ▸ Voci ▸ Cinese.
 </footer>
 
@@ -285,7 +285,7 @@
 'use strict';
 
 /* ============================== COSTANTI ============================== */
-var APP_VERSION = '3.0';
+var APP_VERSION = '3.1';
 var DEFAULT_MODEL = '~google/gemini-flash-latest';
 var DEFAULT_TARGET = 'it';
 
@@ -381,7 +381,7 @@ function refreshTransButton(){
 function renderEmptyState(){
   contentEl.innerHTML =
     '<div class="empty">' +
-      '<h2>Template vuoto · v' + APP_VERSION + '</h2>' +
+      '<h2>Template vuoto · v' + APP_VERSION + · impostazioni salvate sul dispositivo +'</h2>' +
       '<ol>' +
         '<li>Tocca <b>⚙︎ Imposta</b>: chiave API, modello preimpostato e <b>lingua di traduzione</b> (ora: ' + targetName() + '), poi <b>Salva</b>.</li>' +
         '<li>Incolla il testo nell\'area in alto: <b>cinese semplificato</b> → traduzione in ' + targetName() + '; <b>italiano/inglese</b> → cinese con pinyin.</li>' +
